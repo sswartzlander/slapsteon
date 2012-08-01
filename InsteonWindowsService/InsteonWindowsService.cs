@@ -155,28 +155,6 @@ namespace Insteon.WindowsService
         {
             try
             {
-                //if (DateTime.Now.Hour == 0 && DateTime.Now.Minute == 27)
-                //{
-                //    Device livingroomDimmer = _allDevices.FirstOrDefault(d => d.Name == "livingroomDimmer");
-                //    if (null != livingroomDimmer && livingroomDimmer.OkayToTurnOn())
-                //    {
-                //        _insteonWebService.FastOn(_plm, livingroomDimmer.Address);
-                //        livingroomDimmer.LastOn = DateTime.Now;
-                //        livingroomDimmer.Status = 1;
-                //    }
-                //}
-
-                //if (DateTime.Now.Hour == 0 && DateTime.Now.Minute == 28)
-                //{
-                //    Device livingroomDimmer = _allDevices.FirstOrDefault(d => d.Name == "livingroomDimmer");
-                //    if (null != livingroomDimmer)
-                //    {
-                //        _insteonWebService.FastOff(_plm, livingroomDimmer.Address);
-                //        livingroomDimmer.LastOff = DateTime.Now;
-                //        livingroomDimmer.Status = 0;
-                //    }
-                //}
-
                 Device coachLights = _allDevices.FirstOrDefault(d => d.Name == "coachLights");
 
                 if (null != coachLights)
@@ -231,7 +209,7 @@ namespace Insteon.WindowsService
                         }
                     }
                 }
-
+                /*
                 // handle random events
                 foreach (Device randomDevice in _randomDevices)
                 {
@@ -289,7 +267,7 @@ namespace Insteon.WindowsService
                             }
                         }
                     }
-                }
+                } */
             }
             catch (Exception ex)
             {

@@ -16,7 +16,7 @@ namespace Insteon
 
         private static string _serialPort = "COM4";
         private static SerialPort _plm;
-//        private static object _serialReadLock = new object();
+        private static object _serialReadLock = new object();
 
         public static SerialPort PLM { get { return _plm; } }
  //       public static object SerialLock { get { return _serialReadLock; } }
@@ -28,14 +28,12 @@ namespace Insteon
             try
             {
                 log4net.Config.XmlConfigurator.Configure();
-                log.Info("Test logging.");
-                log.Debug("Test logging.");
 
                 string serialPort = ConfigurationManager.AppSettings["SerialPort"];
                 if (!string.IsNullOrEmpty(serialPort))
                     _serialPort = serialPort;
 
-                //bool enableMonitorMode = false;
+                bool enableMonitorMode = true;
                 //string monitorModeSetting = ConfigurationManager.AppSettings["EnableMonitorMode"];
                 //if (!string.IsNullOrEmpty(monitorModeSetting))
                 //    if (!bool.TryParse(monitorModeSetting, out enableMonitorMode))
@@ -46,40 +44,19 @@ namespace Insteon
                 _plm.Open();
                 Console.WriteLine("Successfully connected to PLM.");
 
-                Thread wcfHostThread = new Thread(delegate()
+
+
+                if (enableMonitorMode)
                 {
-                    WebServiceHost insteonHost = null;
-
-                    try
+                    Thread monitorModeThread = new Thread(delegate()
                     {
-                        InsteonWebService insteonWebService = new InsteonWebService(_plm);
-                        insteonHost = new WebServiceHost(insteonWebService);
-                        insteonHost.Open();
-                        while (true)
-                        {
-                            Thread.Sleep(1000);
-                        }
-                    }
-                    catch (ThreadAbortException) { }
-                    catch (Exception ex)
-                    {
+                        TryMonitorMode();
+                    });
 
-                    }
-                });
-                wcfHostThread.Start();
+                    monitorModeThread.Start();
+                    monitorModeThread.Join();
+                }
 
-                //if (enableMonitorMode)
-                //{
-                //    Thread monitorModeThread = new Thread(delegate()
-                //    {
-                //        TryMonitorMode();
-                //    });
-
-                //    monitorModeThread.Start();
-                //    monitorModeThread.Join();
-                //}
-
-                wcfHostThread.Join();
             }
             catch (Exception ex)
             {
@@ -97,6 +74,45 @@ namespace Insteon
                 }
             }
 
+        }
+
+        private static void TryMonitorMode()
+        {
+
+            byte[] cmdBytes = new byte[3];
+            cmdBytes[0] = 0x02;
+            cmdBytes[1] = 0x6B;
+            cmdBytes[2] = 0x40; // 1000
+
+
+            _plm.Write(cmdBytes, 0, 3);
+
+            int numberOfBytesToRead = _plm.BytesToRead;
+
+            byte[] bytesRead = new byte[numberOfBytesToRead];
+
+            _plm.Read(bytesRead, 0, numberOfBytesToRead);
+
+            string byteString = BitConverter.ToString(bytesRead);
+
+            while (true)
+            {
+                // lock here so we can let specific operations prevent this from stealing output
+                lock (_serialReadLock)
+                {
+                    numberOfBytesToRead = _plm.BytesToRead;
+
+                    if (numberOfBytesToRead > 0)
+                    {
+                        bytesRead = new byte[numberOfBytesToRead];
+                        _plm.Read(bytesRead, 0, numberOfBytesToRead);
+                        byteString = BitConverter.ToString(bytesRead);
+                        Console.WriteLine(DateTime.Now.ToString() + ": " + byteString);
+                        log.Info(byteString);
+                    }
+                }
+                Thread.Sleep(1000);
+            }
         }
     }
 }

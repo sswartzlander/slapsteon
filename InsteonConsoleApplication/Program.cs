@@ -17,6 +17,9 @@ namespace Insteon
         private static string _serialPort = "COM4";
         private static SerialPort _plm;
         private static object _serialReadLock = new object();
+        private static List<Device> _allDevices = new List<Device>();
+        private static InsteonHandler _handler;
+
 
         public static SerialPort PLM { get { return _plm; } }
  //       public static object SerialLock { get { return _serialReadLock; } }
@@ -24,7 +27,19 @@ namespace Insteon
 
         static void Main(string[] args)
         {
-            
+
+            // set up devices
+            _allDevices.Add(new Device("coachLights", new DeviceAddress(0x17, 0xF3, 0x23)));
+            _allDevices.Add(new Device("gameroomDimmer", new DeviceAddress(0x1B, 0xBC, 0xC0)));
+            _allDevices.Add(new Device("livingroomDimmer", new DeviceAddress(0x1B, 0xBE, 0xCC)));
+            _allDevices.Add(new Device("mbrDimmer", new DeviceAddress(0x1B, 0xB0, 0xB9)));
+            _allDevices.Add(new Device("mbrMulti", new DeviceAddress(0x19, 0x2B, 0xD4)));
+            _allDevices.Add(new Device("kitchenMultiSolo", new DeviceAddress(0x19, 0x2B, 0x89)));
+            _allDevices.Add(new Device("kitchenMulti", new DeviceAddress(0x19, 0x2A, 0x4D)));
+            _allDevices.Add(new Device("breakfastDimmer", new DeviceAddress(0x1B, 0xBF, 0x6E)));
+            _allDevices.Add(new Device("frontDoorHigh", new DeviceAddress(0x19, 0x2B, 0x83)));
+            _allDevices.Add(new Device("plm", new DeviceAddress(0x19, 0x77, 0x51)));
+
             try
             {
                 log4net.Config.XmlConfigurator.Configure();
@@ -33,29 +48,9 @@ namespace Insteon
                 if (!string.IsNullOrEmpty(serialPort))
                     _serialPort = serialPort;
 
-                bool enableMonitorMode = true;
-                //string monitorModeSetting = ConfigurationManager.AppSettings["EnableMonitorMode"];
-                //if (!string.IsNullOrEmpty(monitorModeSetting))
-                //    if (!bool.TryParse(monitorModeSetting, out enableMonitorMode))
-                //        Console.WriteLine("Could not load monitor mode setting.");
+                _handler = new InsteonHandler(_serialPort, _allDevices);
+                _handler.EnableMonitorMode();
 
-                _plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                Console.WriteLine("Opening serial port " + _serialPort);
-                _plm.Open();
-                Console.WriteLine("Successfully connected to PLM.");
-
-
-
-                if (enableMonitorMode)
-                {
-                    Thread monitorModeThread = new Thread(delegate()
-                    {
-                        TryMonitorMode();
-                    });
-
-                    monitorModeThread.Start();
-                    monitorModeThread.Join();
-                }
 
             }
             catch (Exception ex)
@@ -76,43 +71,6 @@ namespace Insteon
 
         }
 
-        private static void TryMonitorMode()
-        {
-
-            byte[] cmdBytes = new byte[3];
-            cmdBytes[0] = 0x02;
-            cmdBytes[1] = 0x6B;
-            cmdBytes[2] = 0x40; // 1000
-
-
-            _plm.Write(cmdBytes, 0, 3);
-
-            int numberOfBytesToRead = _plm.BytesToRead;
-
-            byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            _plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            string byteString = BitConverter.ToString(bytesRead);
-
-            while (true)
-            {
-                // lock here so we can let specific operations prevent this from stealing output
-                lock (_serialReadLock)
-                {
-                    numberOfBytesToRead = _plm.BytesToRead;
-
-                    if (numberOfBytesToRead > 0)
-                    {
-                        bytesRead = new byte[numberOfBytesToRead];
-                        _plm.Read(bytesRead, 0, numberOfBytesToRead);
-                        byteString = BitConverter.ToString(bytesRead);
-                        Console.WriteLine(DateTime.Now.ToString() + ": " + byteString);
-                        log.Info(byteString);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
+        
     }
 }

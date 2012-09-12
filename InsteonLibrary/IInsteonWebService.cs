@@ -81,5 +81,15 @@ namespace Insteon.Library
          [OperationContract]
          [WebGet(UriTemplate = "/GetAddressTable/{name}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
          string GetAddressTable(string name);
+
+         [OperationContract]
+         [WebGet(UriTemplate = "/Alarm/{x}/{y}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+         void Alarm(string x, string y);
+
+         [OperationContract]
+         [WebGet(UriTemplate = "/Alarm2/{z}/", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+         void Alarm2(string z);
+
+
     }
 }

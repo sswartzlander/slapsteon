@@ -46,9 +46,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="Device.cs" />
     <Compile Include="DeviceAddress.cs" />
+    <Compile Include="FlagsAck.cs" />
+    <Compile Include="InsteonExtendedCommand.cs" />
+    <Compile Include="InsteonHandler.cs" />
     <Compile Include="IInsteonWebService.cs" />
+    <Compile Include="InsteonStandardCommand.cs" />
     <Compile Include="InsteonWebService.cs" />
     <Compile Include="KeypadLinc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

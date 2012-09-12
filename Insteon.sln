@@ -1,10 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual C# Express 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insteon.ConsoleApplication", "InsteonConsoleApplication\Insteon.ConsoleApplication.csproj", "{52EC110B-7F7E-4DFB-9265-1451D757A9D2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insteon.Library", "InsteonLibrary\Insteon.Library.csproj", "{972ABBAF-A8B4-4F8E-9DD0-E49C167D4FAB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insteon.WindowsService", "InsteonWindowsService\Insteon.WindowsService.csproj", "{88E92ECD-A630-4CD0-82BC-F9A61B0526CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Slapsteon.UI", "Slapsteon.UI\Slapsteon.UI.csproj", "{9F24D949-5177-4F97-9B40-77CBBFEDED70}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +48,16 @@ Global
 		{88E92ECD-A630-4CD0-82BC-F9A61B0526CC}.Release|Mixed Platforms.Build.0 = Release|x86
 		{88E92ECD-A630-4CD0-82BC-F9A61B0526CC}.Release|x86.ActiveCfg = Release|x86
 		{88E92ECD-A630-4CD0-82BC-F9A61B0526CC}.Release|x86.Build.0 = Release|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Debug|x86.ActiveCfg = Debug|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Debug|x86.Build.0 = Debug|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Release|Any CPU.ActiveCfg = Release|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Release|Mixed Platforms.Build.0 = Release|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Release|x86.ActiveCfg = Release|x86
+		{9F24D949-5177-4F97-9B40-77CBBFEDED70}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

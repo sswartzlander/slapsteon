@@ -21,14 +21,20 @@ namespace Insteon.Library
         public decimal Status { get; set; }
         public string Name { get; set; }
 
-        public bool OkayToTurnOn()
+        public string AddressString
         {
-            if (-1 == Status) return true;
+            get { return Address.ToString(); }
 
-            if (DateTime.Now.Subtract(LastOn).TotalSeconds < 60)
-                return false;
-
-            return true;
         }
+
+        //public bool OkayToTurnOn()
+        //{
+        //    if (-1 == Status) return true;
+
+        //    if (DateTime.Now.Subtract(LastOn).TotalSeconds < 60)
+        //        return false;
+
+        //    return true;
+        //}
     }
 }

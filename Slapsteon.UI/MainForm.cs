@@ -15,7 +15,7 @@ namespace Slapsteon.UI
 {
     public partial class MainForm : Form
     {
-
+        private delegate void InsertConsoleTextCallback(string text); 
         private string _serialPort = "COM3";
         private object _serialReadLock = new object();
         private List<Device> _allDevices = new List<Device>();
@@ -42,7 +42,7 @@ namespace Slapsteon.UI
             _handler = new InsteonHandler(_serialPort, _allDevices);
             _handler.EnableMonitorMode();
 
-
+            _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(InsteonTrafficDetected);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -128,6 +128,57 @@ namespace Slapsteon.UI
 
                 lblName.Text = _selectedDevice.Name;
                 lblAddress.Text = _selectedDevice.AddressString;
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        private void btnGetStatus_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                DeviceStatus status = _handler.GetDeviceStatus(_selectedDevice.Address);
+
+                lblOnLevel.Text = status.OnLevel.ToString("X");
+                lblDelta.Text = status.Delta.ToString("X");
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        private void btnClearConsole_Click(object sender, EventArgs e)
+        {
+            rtConsole.Text = "";
+        }
+
+        public void InsteonTrafficDetected(object sender, InsteonTrafficEventArgs e)
+        {
+            this.InsertConsoleText(e.ToString() + Environment.NewLine);
+        }
+
+
+        private void InsertConsoleText(string text)
+        {
+            if (this.rtConsole.InvokeRequired)
+            {
+                InsertConsoleTextCallback d = new InsertConsoleTextCallback(InsertConsoleText);
+                this.Invoke(d, new object[] { text });
+            }
+            else
+            {
+                this.rtConsole.Text += text;
+            }
+        }
+
+        private void btnGetAddressTable_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                List<AddressRecord> addressRecords = _handler.GetAddressRecords(_selectedDevice.Address);
             }
             catch (Exception ex)
             {

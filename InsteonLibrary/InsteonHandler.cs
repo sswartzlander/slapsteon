@@ -11,6 +11,10 @@ namespace Insteon.Library
     public class InsteonHandler
     {
 
+        public delegate void InsteonTrafficHandler(object sender, InsteonTrafficEventArgs e);
+
+        public event InsteonTrafficHandler InsteonTrafficDetected;
+
         private SerialPort _plm;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private Thread _monitorModeThread;
@@ -248,7 +252,17 @@ namespace Insteon.Library
 
             log.Info(string.Format("Received Message from {0} to {1} of type: {2}({3}):{4} ({5})", GetDeviceName(fromAddress.ToString()), GetDeviceName(toAddress.ToString()), commandType, command1.ToString("X"), command2.ToString("X"), flagDescription));
 
-
+            if (null != InsteonTrafficDetected)
+            {
+                InsteonTrafficEventArgs args = new InsteonTrafficEventArgs();
+                args.Source = _allDevices[fromAddress.ToString()];
+                args.Destination = toAddress;
+                args.Flags = flag;
+                args.Command1 = command1;
+                args.Command2 = command2;
+                args.Description = string.Format("Command={0}/DestName={1}", commandType, GetDeviceName(toAddress.ToString()));
+                InsteonTrafficDetected(this, args);
+            }
         }
 
         private bool CompareToLastSentCommand(byte[] command)
@@ -373,6 +387,65 @@ namespace Insteon.Library
             return results;
         }
 
+        public DeviceStatus GetDeviceStatus(DeviceAddress deviceAddress)
+        {
+            byte[] command = new byte[8];
+            DeviceStatus status = new DeviceStatus();
+            try
+            {
+                lock (this)
+                {
+                    // send a get status command
+                    command[0] = 0x02;
+                    command[1] = 0x62;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
+                    command[5] = 0x03;
+                    command[6] = Constants.STD_COMMAND_STATUS_REQUEST;
+                    command[7] = 0x00;
+
+                    _plm.Write(command, 0, 8);
+
+                    Thread.Sleep(1000);
+                    int numberOfBytesToRead = _plm.BytesToRead;
+
+
+                    if (numberOfBytesToRead < 20)
+                        throw new Exception("Not enough data received.");
+
+                    byte[] bytesRead = new byte[20]; // only need 20 bytes for the ack and response
+
+                    _plm.Read(bytesRead, 0, 20);
+
+                    string results = BitConverter.ToString(bytesRead);
+
+                    // wait for the response
+
+                    // 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
+
+                    if (bytesRead[8] != 0x06)
+                        throw new Exception("ACK bit was not 0x06 for status command.");
+
+                    // read the command2 and 1 of the response
+
+                    byte level = bytesRead[19];
+                    byte delta = bytesRead[18];
+
+                    status.OnLevel = level;
+                    status.Delta = delta;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(string.Format("Error getting device status for {0}", deviceAddress.ToString()));
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+            }
+
+            return status;
+        }
+
         private bool SetMonitorMode()
         {
             bool succeeded = false;
@@ -463,6 +536,86 @@ namespace Insteon.Library
                 }
                 Thread.Sleep(1000);
             }
+        }
+
+        public List<AddressRecord> GetAddressRecords(DeviceAddress address)
+        {
+            List<AddressRecord> addressRecords = new List<AddressRecord>();
+
+            try
+            {
+                lock (this)
+                {
+                    // send the get address command
+                    byte[] command = new byte[22];
+                    command[0] = 0x02;
+                    command[1] = 0x62; // Standard Command
+                    command[2] = address.Byte1;
+                    command[3] = address.Byte2;
+                    command[4] = address.Byte3;
+                    command[5] = 0x1F; // for standard 0x0F is good, this is extended
+                    command[6] = Constants.EXT_COMMAND_READ_WRITE_ALDB;
+                    command[7] = 0x00;
+
+                    _plm.Write(command, 0, 22);
+
+                    Thread.Sleep(1000);
+                    int numberOfBytesToRead = _plm.BytesToRead;
+
+                    // only read the ack (23 bytes) and we should receive a standard message (11)
+                    if (numberOfBytesToRead > 34)
+                        numberOfBytesToRead = 34; 
+
+                    byte[] bytesRead = new byte[numberOfBytesToRead];
+
+                    _plm.Read(bytesRead, 0, numberOfBytesToRead);
+
+                    log.Info("Address Ack info: " + BytesToString(bytesRead));
+
+                    while (true)
+                    {
+                        Thread.Sleep(250);
+                        numberOfBytesToRead = _plm.BytesToRead;
+                        if (numberOfBytesToRead >= 25)
+                        {
+                            byte[] addressEntryBytes = new byte[25];
+                            _plm.Read(addressEntryBytes, 0, 25);
+
+                            log.Info("Address data received: " + BytesToString(addressEntryBytes));
+
+                            if (addressEntryBytes[16] != 0xA2 && addressEntryBytes[16] != 0xE2)
+                            {
+                                break;
+                            }
+
+                           
+
+                            AddressEntryType type = (AddressEntryType)addressEntryBytes[16];
+
+                            byte groupNumber = addressEntryBytes[17];
+                            byte address1 = addressEntryBytes[18];
+                            byte address2 = addressEntryBytes[19];
+                            byte address3 = addressEntryBytes[20];
+
+                            byte localData1 = addressEntryBytes[21];
+                            byte localData2 = addressEntryBytes[22];
+                            byte localData3 = addressEntryBytes[23];
+
+                            AddressRecord record = new AddressRecord(type, groupNumber, 
+                                new DeviceAddress(address1, address2, address3), 
+                                localData1, localData2, localData3);
+
+                            addressRecords.Add(record);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            return addressRecords;
         }
 
         private Device FindDeviceForAddress(string address)

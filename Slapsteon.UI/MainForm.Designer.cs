@@ -81,12 +81,26 @@
             this.Address = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.LastOn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.LastOff = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btnGetStatus = new System.Windows.Forms.Button();
+            this.label22 = new System.Windows.Forms.Label();
+            this.lblOnLevel = new System.Windows.Forms.Label();
+            this.label23 = new System.Windows.Forms.Label();
+            this.lblDelta = new System.Windows.Forms.Label();
+            this.rtConsole = new System.Windows.Forms.RichTextBox();
+            this.btnClearConsole = new System.Windows.Forms.Button();
+            this.btnGetAddressTable = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevices)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnGetAddressTable);
+            this.groupBox1.Controls.Add(this.lblDelta);
+            this.groupBox1.Controls.Add(this.label23);
+            this.groupBox1.Controls.Add(this.lblOnLevel);
+            this.groupBox1.Controls.Add(this.label22);
+            this.groupBox1.Controls.Add(this.btnGetStatus);
             this.groupBox1.Controls.Add(this.lblName);
             this.groupBox1.Controls.Add(this.lblAddress);
             this.groupBox1.Controls.Add(this.label21);
@@ -530,11 +544,86 @@
             this.LastOff.ReadOnly = true;
             this.LastOff.Visible = false;
             // 
+            // btnGetStatus
+            // 
+            this.btnGetStatus.Location = new System.Drawing.Point(147, 15);
+            this.btnGetStatus.Name = "btnGetStatus";
+            this.btnGetStatus.Size = new System.Drawing.Size(75, 23);
+            this.btnGetStatus.TabIndex = 6;
+            this.btnGetStatus.Text = "Get Status";
+            this.btnGetStatus.UseVisualStyleBackColor = true;
+            this.btnGetStatus.Click += new System.EventHandler(this.btnGetStatus_Click);
+            // 
+            // label22
+            // 
+            this.label22.AutoSize = true;
+            this.label22.Location = new System.Drawing.Point(9, 124);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(33, 13);
+            this.label22.TabIndex = 7;
+            this.label22.Text = "Level";
+            // 
+            // lblOnLevel
+            // 
+            this.lblOnLevel.AutoSize = true;
+            this.lblOnLevel.Location = new System.Drawing.Point(99, 124);
+            this.lblOnLevel.Name = "lblOnLevel";
+            this.lblOnLevel.Size = new System.Drawing.Size(0, 13);
+            this.lblOnLevel.TabIndex = 8;
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(8, 147);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(32, 13);
+            this.label23.TabIndex = 9;
+            this.label23.Text = "Delta";
+            // 
+            // lblDelta
+            // 
+            this.lblDelta.AutoSize = true;
+            this.lblDelta.Location = new System.Drawing.Point(99, 147);
+            this.lblDelta.Name = "lblDelta";
+            this.lblDelta.Size = new System.Drawing.Size(0, 13);
+            this.lblDelta.TabIndex = 10;
+            // 
+            // rtConsole
+            // 
+            this.rtConsole.Location = new System.Drawing.Point(324, 253);
+            this.rtConsole.Name = "rtConsole";
+            this.rtConsole.ReadOnly = true;
+            this.rtConsole.Size = new System.Drawing.Size(434, 190);
+            this.rtConsole.TabIndex = 38;
+            this.rtConsole.Text = "";
+            // 
+            // btnClearConsole
+            // 
+            this.btnClearConsole.Location = new System.Drawing.Point(682, 457);
+            this.btnClearConsole.Name = "btnClearConsole";
+            this.btnClearConsole.Size = new System.Drawing.Size(75, 23);
+            this.btnClearConsole.TabIndex = 39;
+            this.btnClearConsole.Text = "Clear";
+            this.btnClearConsole.UseVisualStyleBackColor = true;
+            this.btnClearConsole.Click += new System.EventHandler(this.btnClearConsole_Click);
+            // 
+            // btnGetAddressTable
+            // 
+            this.btnGetAddressTable.Location = new System.Drawing.Point(147, 44);
+            this.btnGetAddressTable.Name = "btnGetAddressTable";
+            this.btnGetAddressTable.Size = new System.Drawing.Size(75, 23);
+            this.btnGetAddressTable.TabIndex = 11;
+            this.btnGetAddressTable.Text = "Get Address";
+            this.btnGetAddressTable.UseVisualStyleBackColor = true;
+            this.btnGetAddressTable.Click += new System.EventHandler(this.btnGetAddressTable_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(769, 492);
+            this.Controls.Add(this.btnClearConsole);
+            this.Controls.Add(this.rtConsole);
             this.Controls.Add(this.dgvDevices);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtUD10);
@@ -640,6 +729,14 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Address;
         private System.Windows.Forms.DataGridViewTextBoxColumn LastOn;
         private System.Windows.Forms.DataGridViewTextBoxColumn LastOff;
+        private System.Windows.Forms.Button btnGetStatus;
+        private System.Windows.Forms.Label lblDelta;
+        private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label lblOnLevel;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.RichTextBox rtConsole;
+        private System.Windows.Forms.Button btnClearConsole;
+        private System.Windows.Forms.Button btnGetAddressTable;
 
     }
 }

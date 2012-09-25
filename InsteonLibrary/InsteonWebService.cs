@@ -201,7 +201,7 @@ namespace Insteon.Library
                 //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
                 //plm.Open();
 
-                FastOn(_mbrDimmer, 0x4c);
+                On(_mbrDimmer, 0x4c);
 
                 //plm.Close();
                 //plm.Dispose();
@@ -258,7 +258,7 @@ namespace Insteon.Library
                 //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
                 //plm.Open();
 
-                FastOn(_mbrDimmer, 0x68);
+                On(_mbrDimmer, 0x68);
 
                 //plm.Close();
                 //plm.Dispose();
@@ -277,7 +277,7 @@ namespace Insteon.Library
                 //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
                 //plm.Open();
 
-                FastOn(_mbrDimmer, 0xB3);
+                On(_mbrDimmer, 0xB3);
 
                 //plm.Close();
                 //plm.Dispose();
@@ -462,6 +462,12 @@ namespace Insteon.Library
             FastOn(address, 0xFF);
         }
 
+        public void On(DeviceAddress address, byte level)
+        {
+            log.Info("On called");
+            _handler.SendStandardCommand(address, Constants.STD_COMMAND_ON, level, 0x03);
+        }
+
         public void FastOn(DeviceAddress address, byte level)
         {
             log.Info("FastOn called");
@@ -539,6 +545,26 @@ namespace Insteon.Library
             //plm.Read(bytesRead, 0, numberOfBytesToRead);
 
             //string byteString = BitConverter.ToString(bytesRead);
+        }
+
+        public void LRDOn30()
+        {
+
+            try
+            {
+                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
+                //plm.Open();
+
+                On(_livingroomDimmer, 0x4c);
+
+                //plm.Close();
+                //plm.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error occurred: " + ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
         }
 
         public void RampOff(DeviceAddress address, byte rampRate)

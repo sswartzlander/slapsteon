@@ -90,6 +90,8 @@ namespace Insteon.Library
          [WebGet(UriTemplate = "/Alarm2/{z}/", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
          void Alarm2(string z);
 
-
+         [OperationContract]
+         [WebGet(UriTemplate = "/LRD/On30", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+         void LRDOn30();
     }
 }

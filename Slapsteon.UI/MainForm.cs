@@ -26,6 +26,9 @@ namespace Slapsteon.UI
 
         public MainForm()
         {
+            log4net.Config.XmlConfigurator.Configure();
+
+            log.Info("Starting application.");
             // set up devices
             _allDevices.Add(new Device("coachLights", new DeviceAddress(0x17, 0xF3, 0x23)));
             _allDevices.Add(new Device("gameroomDimmer", new DeviceAddress(0x1B, 0xBC, 0xC0)));

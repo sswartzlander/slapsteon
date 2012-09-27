@@ -72,11 +72,14 @@ namespace Insteon.Library
                         ParseCommand(remainingBytes);
 
                     }
+
+                    _lastSentCommand = null;
                     return;
                 }
                 else if (commandBytes[_lastSentCommand.Length] == 0x15)
                 {
                     log.Warn(string.Format("Received NAK for Command {0}", BytesToString(commandBytes)));
+                    _lastSentCommand = null;
                     return;
                 }
             }
@@ -113,8 +116,8 @@ namespace Insteon.Library
                     return;
                 }
 
-                byte[] singleCommand = new byte[11];
-                for (int i = 0; i < 11; i++)
+                byte[] singleCommand = new byte[25];
+                for (int i = 0; i < 25; i++)
                 {
                     singleCommand[i]=commandBytes[i];
                 }
@@ -516,6 +519,11 @@ namespace Insteon.Library
             int numberOfBytesToRead;
             byte[] bytesRead = null;
             string byteString = null;
+
+            _plm.DataReceived += new SerialDataReceivedEventHandler(_plm_DataReceived);
+
+            return;
+
             while (true)
             {
                 // lock here so we can let specific operations prevent this from stealing output
@@ -535,6 +543,115 @@ namespace Insteon.Library
                     }
                 }
                 Thread.Sleep(1000);
+            }
+        }
+        private byte[] _buffer = new byte[1024];
+        private int _bufferOffset = 0;
+
+        private void _plm_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            
+            log.Info("Data detected from serial port.");
+            try
+            {
+                int bytesToRead = _plm.BytesToRead;
+                byte[] bytesRead = new byte[bytesToRead];
+                _plm.Read(bytesRead, 0, bytesToRead);
+
+                string bytesAsString = BytesToString(bytesRead);
+                log.Info(string.Format("{0} bytes read from buffer: {1}", bytesToRead, bytesAsString));
+
+                lock (this)
+                {
+                    Buffer.BlockCopy(bytesRead, 0, _buffer, _bufferOffset, bytesToRead);
+                    _bufferOffset += bytesToRead;
+                }
+                AnalyzeSerialBuffer();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error during read bytes.");
+                log.Error(string.Format("{0}\n{1}", ex.Message, ex.StackTrace));
+            }
+        }
+
+        private void AnalyzeSerialBuffer()
+        {
+            lock (this)
+            {
+                try
+                {
+                    if (_buffer.Length < 2)
+                        return;
+
+                    if (_buffer[0] != 0x02)
+                        throw new Exception("Buffer does not start with 0x02");
+
+                    byte[] command = null;
+
+                    switch (_buffer[1])
+                    {
+                        case Constants.IM_COMMAND_SEND_STANDARD_OR_EXTENDED_MSG:
+                            // ack or nak
+                            // determine whether the command sent was extended based on the flag byte
+                            // read it out of the buffer
+                            // not enough data for flag yet
+                            if (_bufferOffset < 6)
+                                return;
+
+                            if ((_buffer[5] & 0x10) == 0) // standard
+                            {
+                                if (_bufferOffset < 9)
+                                    return;
+
+                                command = ExtractCommandFromBuffer(9);
+                            }
+                        else
+                            {
+                                if (_bufferOffset < 23)
+                                    return;
+
+                                command = ExtractCommandFromBuffer(23);
+                            }
+
+                            break;
+                        case Constants.IM_COMMAND_STANDARD_MESSAGE_RECEIVED:
+                            // not enough data yet
+                            if (_bufferOffset < 11)
+                                return;
+                            command = ExtractCommandFromBuffer(11);
+                            break;
+                        case Constants.IM_COMMAND_EXTENDED_MESSAGE_RECEIVED:
+                            // not enough data yet
+                            if (_bufferOffset < 25)
+                                return;
+                            command = ExtractCommandFromBuffer(25);
+                            break;
+                        default:
+
+                            break;
+                    }
+
+                    if (null != command)
+                    {
+                        string commandString = BytesToString(command);
+                        log.Info("Received command " + commandString);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Error while Analyzing buffer.  Cleaning contents.");
+                    string bufferString = BytesToString(_buffer);
+                    log.Error(string.Format("Current Buffer Size: {0}.  Contents: {1}", _bufferOffset, bufferString));
+                    log.Error(string.Format("{0}\n{1}", ex.Message, ex.StackTrace));
+
+                    _buffer = new byte[1024];
+                    _bufferOffset = 0;
+                }
+
+                // if there is anything left in the buffer continue to proces
+                if (_bufferOffset > 0)
+                    AnalyzeSerialBuffer();
             }
         }
 
@@ -635,6 +752,23 @@ namespace Insteon.Library
             if (!_allDevices.ContainsKey(address))
                 return string.Format("unknown({0})", address);
             return _allDevices[address].Name;
+        }
+
+        private byte[] ExtractCommandFromBuffer(int size)
+        {
+            byte[] command = new byte[size];
+
+            Buffer.BlockCopy(_buffer, 0, command, 0, size);
+
+            // reset the buffer
+            byte[] temp = new byte[1024];
+            Buffer.BlockCopy(_buffer, size, temp, 0, _bufferOffset - size);
+
+            _buffer = temp;
+            _bufferOffset -= size;
+
+            return command;
+
         }
 
     }

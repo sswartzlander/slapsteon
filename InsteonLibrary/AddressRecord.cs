@@ -23,5 +23,6 @@ namespace Insteon.Library
         public byte LocalData1 { get; set; }
         public byte LocalDate2 { get; set; }
         public byte LocalData3 { get; set; }
+        public byte AddressOffset { get; set; }
     }
 }

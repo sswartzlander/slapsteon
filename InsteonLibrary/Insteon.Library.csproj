@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="AddressEntryType.cs" />
     <Compile Include="AddressRecord.cs" />
+    <Compile Include="CircularBuffer.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Device.cs" />
     <Compile Include="DeviceAddress.cs" />

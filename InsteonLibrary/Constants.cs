@@ -195,5 +195,12 @@ namespace Insteon.Library
         public const byte IM_COMMAND_BUTTON_EVENT_REPORT = 0x54;
         public const byte IM_COMMAND_USER_RESET_DETECTED = 0x55;
         public const byte IM_COMMAND_SEND_STANDARD_OR_EXTENDED_MSG = 0x62;
+        public const byte IM_COMMAND_SET_IM_CONFIGURATION = 0x6B;
+        public const byte IM_COMMAND_SEND_ALL_LINK_COMMAND = 0x61;
+        public const byte IM_COMMAND_ALL_LINK_CLEANUP_FAILURE_REPORT = 0x56;
+        public const byte IM_COMMAND_ALL_LINK_CLEANUP_STATUS_REOPRT = 0x58;
+        public const byte IM_COMMAND_START_ALL_LINKING = 0x64;
+        public const byte IM_COMMAND_CANCEL_ALL_LINKING = 0x65;
+        public const byte IM_COMMAND_ALL_LINK_RECORD_RESPONSE = 0x57;
     }
 }

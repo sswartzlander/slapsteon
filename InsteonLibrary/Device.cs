@@ -21,6 +21,18 @@ namespace Insteon.Library
         public decimal Status { get; set; }
         public string Name { get; set; }
 
+        private Dictionary<string,AddressRecord> _aldb;
+        public Dictionary<string,AddressRecord> ALDB
+        {
+            get
+            {
+                if (null == _aldb)
+                    _aldb = new Dictionary<string,AddressRecord>();
+                return _aldb;
+            }
+            set { _aldb = value; }
+        }
+
         public string AddressString
         {
             get { return Address.ToString(); }

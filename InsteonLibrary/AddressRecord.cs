@@ -14,15 +14,16 @@ namespace Insteon.Library
             Address = address;
             LocalData1 = ld1;
             LocalData3 = ld2;
-            LocalDate2 = ld3;
+            LocalData2 = ld3;
         }
 
         public AddressEntryType Type { get; set; }
         public byte GroupNumber { get; set; }
         public DeviceAddress Address { get; set; }
         public byte LocalData1 { get; set; }
-        public byte LocalDate2 { get; set; }
+        public byte LocalData2 { get; set; }
         public byte LocalData3 { get; set; }
-        public byte AddressOffset { get; set; }
+        public string AddressOffset { get; set; }
+        
     }
 }

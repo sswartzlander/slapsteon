@@ -14,10 +14,12 @@ namespace Insteon.Library
         public delegate void InsteonTrafficHandler(object sender, InsteonTrafficEventArgs e);
 
         public event InsteonTrafficHandler InsteonTrafficDetected;
+        public event InsteonTrafficHandler LastALDBEntryRead;
 
         private SerialPort _plm;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private Thread _monitorModeThread;
+        private bool _readingALDB = false;
 
         private Dictionary<string,Device> _allDevices = new Dictionary<string,Device>();
 
@@ -253,6 +255,28 @@ namespace Insteon.Library
                     break;
             }
 
+            // if the target is not an existing device (group target)
+            // look at address entries for devices that are RESPONDERS to the 
+            // address of the command, matching the group in the address..
+            if (null == dev)
+            {
+                foreach (string i in _allDevices.Keys)
+                {
+                    foreach (string j in _allDevices[i].ALDB.Keys)
+                    {
+                        if (_allDevices[i].ALDB[j].Type == AddressEntryType.Responder &&
+                            _allDevices[i].ALDB[j].Address.ToString() == fromAddress.ToString())
+                        {
+                            if (_allDevices[i].ALDB[j].GroupNumber == toAddress.Byte3)
+                            {
+                                log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, _allDevices[i].ALDB[j].GroupNumber, _allDevices[i].ALDB[j].LocalData1.ToString("X"), _allDevices[i].ALDB[j].LocalData2.ToString("X"), _allDevices[i].ALDB[j].LocalData3.ToString("X")));
+                            }
+                        }
+                    }
+                }
+            }
+
+
             log.Info(string.Format("Received Message from {0} to {1} of type: {2}({3}):{4} ({5})", GetDeviceName(fromAddress.ToString()), GetDeviceName(toAddress.ToString()), commandType, command1.ToString("X"), command2.ToString("X"), flagDescription));
 
             if (null != InsteonTrafficDetected)
@@ -265,6 +289,83 @@ namespace Insteon.Library
                 args.Command2 = command2;
                 args.Description = string.Format("Command={0}/DestName={1}", commandType, GetDeviceName(toAddress.ToString()));
                 InsteonTrafficDetected(this, args);
+            }
+        }
+
+        private void ProcessExtendedMessageReceived(byte[] message)
+        {
+            switch (message[9])
+            {
+                case Constants.EXT_COMMAND_READ_WRITE_ALDB:
+                    ProcessALDBResponse(message);
+                    return;
+                default:
+                    break;
+            }
+
+        }
+
+        private void ProcessALDBResponse(byte[] message)
+        {
+            byte deviceAddress1 = message[2];
+            byte deviceAddress2 = message[3];
+            byte deviceAddress3 = message[4];
+
+            DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
+
+            Device device = _allDevices[deviceAddress.ToString()];
+
+            if (null == device)
+            {
+                log.Warn(string.Format("Could not find device with address {0} in all devices.", deviceAddress.ToString()));
+                return;
+            }          
+            
+            if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
+            {
+                // last record detected...signal anything waiting for all addresses
+                if (null != LastALDBEntryRead)
+                {
+                    InsteonTrafficEventArgs args = new InsteonTrafficEventArgs();
+                    args.Source = device;
+                    args.Description = "Finished reading ALDB";
+                    args.Command1 = 0x2F;
+
+                    LastALDBEntryRead(this, args);
+                }
+                return;
+            }
+
+            AddressEntryType type = (AddressEntryType)message[16];
+
+            byte groupNumber = message[17];
+            byte address1 = message[18];
+            byte address2 = message[19];
+            byte address3 = message[20];
+
+            byte localData1 = message[21];
+            byte localData2 = message[22];
+            byte localData3 = message[23];
+
+            byte aldbAddress1 = message[14];
+            byte aldbAddress2 = message[15];
+
+            string aldbOffset = string.Format("{0}{1}",aldbAddress1.ToString("X"),aldbAddress2.ToString("X"));
+
+            AddressRecord record = new AddressRecord(type, groupNumber,
+                new DeviceAddress(address1, address2, address3),
+                localData1, localData2, localData3);
+            record.AddressOffset = aldbOffset;
+
+       
+
+            if (device.ALDB.ContainsKey(aldbOffset))
+            {
+                device.ALDB[aldbOffset] = record;
+            }
+            else
+            {
+                device.ALDB.Add(aldbOffset, record);
             }
         }
 
@@ -463,17 +564,17 @@ namespace Insteon.Library
                     cmdBytes[2] = 0x40; // 1000
 
                     _plm.Write(cmdBytes, 0, 3);
-                    Thread.Sleep(250);
+                    //Thread.Sleep(250);
 
-                    int numberOfBytesToRead = _plm.BytesToRead;
+                    //int numberOfBytesToRead = _plm.BytesToRead;
 
-                    byte[] bytesRead = new byte[numberOfBytesToRead];
+                    //byte[] bytesRead = new byte[numberOfBytesToRead];
 
-                    _plm.Read(bytesRead, 0, numberOfBytesToRead);
+                    //_plm.Read(bytesRead, 0, numberOfBytesToRead);
 
-                    string byteString = BitConverter.ToString(bytesRead);
+                    //string byteString = BitConverter.ToString(bytesRead);
 
-                    log.Info(string.Format("SetMonitorMode received: {0}", byteString));
+                    //log.Info(string.Format("SetMonitorMode received: {0}", byteString));
                 }
                 succeeded = true;
             }
@@ -497,9 +598,9 @@ namespace Insteon.Library
 
         private void RunMonitorMode()
         {
+            _plm.DataReceived += new SerialDataReceivedEventHandler(_plm_DataReceived);
 
             this.SetMonitorMode();
-            Thread.Sleep(250);
 
             //byte[] statusCommand = new byte[8]; // (, , 
             //statusCommand[0] = 0x02;
@@ -520,30 +621,30 @@ namespace Insteon.Library
             byte[] bytesRead = null;
             string byteString = null;
 
-            _plm.DataReceived += new SerialDataReceivedEventHandler(_plm_DataReceived);
+           
 
             return;
 
-            while (true)
-            {
-                // lock here so we can let specific operations prevent this from stealing output
-                lock (this)
-                {
-                    numberOfBytesToRead = _plm.BytesToRead;
+            //while (true)
+            //{
+            //    // lock here so we can let specific operations prevent this from stealing output
+            //    lock (this)
+            //    {
+            //        numberOfBytesToRead = _plm.BytesToRead;
 
-                    if (numberOfBytesToRead > 0)
-                    {
-                        bytesRead = new byte[numberOfBytesToRead];
-                        _plm.Read(bytesRead, 0, numberOfBytesToRead);
-                        byteString = BitConverter.ToString(bytesRead);
-                        Console.WriteLine(DateTime.Now.ToString() + ": " + byteString);
-                        log.Info(byteString);
+            //        if (numberOfBytesToRead > 0)
+            //        {
+            //            bytesRead = new byte[numberOfBytesToRead];
+            //            _plm.Read(bytesRead, 0, numberOfBytesToRead);
+            //            byteString = BitConverter.ToString(bytesRead);
+            //            Console.WriteLine(DateTime.Now.ToString() + ": " + byteString);
+            //            log.Info(byteString);
 
-                        this.ParseCommand(bytesRead);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
+            //            this.ParseCommand(bytesRead);
+            //        }
+            //    }
+            //    Thread.Sleep(1000);
+            //}
         }
         private byte[] _buffer = new byte[1024];
         private int _bufferOffset = 0;
@@ -581,7 +682,7 @@ namespace Insteon.Library
             {
                 try
                 {
-                    if (_buffer.Length < 2)
+                    if (_bufferOffset < 2)
                         return;
 
                     if (_buffer[0] != 0x02)
@@ -591,6 +692,12 @@ namespace Insteon.Library
 
                     switch (_buffer[1])
                     {
+                        case Constants.IM_COMMAND_SET_IM_CONFIGURATION:
+                            if (_bufferOffset < 4)
+                                return;
+                            command = ExtractCommandFromBuffer(4);
+
+                            break;
                         case Constants.IM_COMMAND_SEND_STANDARD_OR_EXTENDED_MSG:
                             // ack or nak
                             // determine whether the command sent was extended based on the flag byte
@@ -620,16 +727,69 @@ namespace Insteon.Library
                             if (_bufferOffset < 11)
                                 return;
                             command = ExtractCommandFromBuffer(11);
+
+                            ProcessStandardReceivedMessage(command);
                             break;
                         case Constants.IM_COMMAND_EXTENDED_MESSAGE_RECEIVED:
                             // not enough data yet
                             if (_bufferOffset < 25)
                                 return;
                             command = ExtractCommandFromBuffer(25);
+
+                            ProcessExtendedMessageReceived(command);
                             break;
-                        default:
+
+                        case Constants.IM_COMMAND_SEND_ALL_LINK_COMMAND:
+                            if (_bufferOffset < 6)
+                                return;
+
+                            command = ExtractCommandFromBuffer(6);
+                            
+                            break;
+                        case Constants.IM_COMMAND_ALL_LINK_CLEANUP_FAILURE_REPORT:
+                            if (_bufferOffset < 7)
+                                return;
+
+                            command = ExtractCommandFromBuffer(7);
 
                             break;
+                        case Constants.IM_COMMAND_ALL_LINK_CLEANUP_STATUS_REOPRT:
+                            if (_bufferOffset < 3)
+                                return;
+
+                            command = ExtractCommandFromBuffer(3);
+                            break;
+                        case Constants.IM_COMMAND_START_ALL_LINKING:
+                            if (_bufferOffset < 5)
+                                return;
+                            command = ExtractCommandFromBuffer(5);
+                            break;
+                        case Constants.IM_COMMAND_CANCEL_ALL_LINKING:
+                            if (_bufferOffset < 3)
+                                return;
+                            command = ExtractCommandFromBuffer(3);
+                            break;
+                        case Constants.IM_COMMAND_ALL_LINKING_COMPLETED:
+                            if (_bufferOffset < 10)
+                                return;
+                            command = ExtractCommandFromBuffer(10);
+                            break;
+                        case Constants.IM_COMMAND_ALL_LINK_RECORD_RESPONSE:
+                            if (_bufferOffset < 10)
+                                break;
+                            command = ExtractCommandFromBuffer(10);
+                            break;
+
+                        default:
+                            log.Warn(string.Format("Unknown IM command type in the buffer: {0}.  Cleaning the buffer.", _buffer[1].ToString("X")));
+                            
+                            string bufferString = BytesToString(_buffer);
+                            log.Warn(string.Format("Current Buffer Size: {0}.  Contents: {1}", _bufferOffset, bufferString));
+
+                            _buffer = new byte[1024];
+                            _bufferOffset = 0;
+
+                            return;
                     }
 
                     if (null != command)
@@ -655,84 +815,29 @@ namespace Insteon.Library
             }
         }
 
-        public List<AddressRecord> GetAddressRecords(DeviceAddress address)
+        public void GetAddressRecords(DeviceAddress address)
         {
-            List<AddressRecord> addressRecords = new List<AddressRecord>();
-
             try
             {
-                lock (this)
-                {
-                    // send the get address command
-                    byte[] command = new byte[22];
-                    command[0] = 0x02;
-                    command[1] = 0x62; // Standard Command
-                    command[2] = address.Byte1;
-                    command[3] = address.Byte2;
-                    command[4] = address.Byte3;
-                    command[5] = 0x1F; // for standard 0x0F is good, this is extended
-                    command[6] = Constants.EXT_COMMAND_READ_WRITE_ALDB;
-                    command[7] = 0x00;
 
-                    _plm.Write(command, 0, 22);
+                // send the get address command
+                byte[] command = new byte[22];
+                command[0] = 0x02;
+                command[1] = 0x62; // Standard Command
+                command[2] = address.Byte1;
+                command[3] = address.Byte2;
+                command[4] = address.Byte3;
+                command[5] = 0x1F; // for standard 0x0F is good, this is extended
+                command[6] = Constants.EXT_COMMAND_READ_WRITE_ALDB;
+                command[7] = 0x00;
 
-                    Thread.Sleep(1000);
-                    int numberOfBytesToRead = _plm.BytesToRead;
+                _plm.Write(command, 0, 22);
 
-                    // only read the ack (23 bytes) and we should receive a standard message (11)
-                    if (numberOfBytesToRead > 34)
-                        numberOfBytesToRead = 34; 
-
-                    byte[] bytesRead = new byte[numberOfBytesToRead];
-
-                    _plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-                    log.Info("Address Ack info: " + BytesToString(bytesRead));
-
-                    while (true)
-                    {
-                        Thread.Sleep(250);
-                        numberOfBytesToRead = _plm.BytesToRead;
-                        if (numberOfBytesToRead >= 25)
-                        {
-                            byte[] addressEntryBytes = new byte[25];
-                            _plm.Read(addressEntryBytes, 0, 25);
-
-                            log.Info("Address data received: " + BytesToString(addressEntryBytes));
-
-                            if (addressEntryBytes[16] != 0xA2 && addressEntryBytes[16] != 0xE2)
-                            {
-                                break;
-                            }
-
-                           
-
-                            AddressEntryType type = (AddressEntryType)addressEntryBytes[16];
-
-                            byte groupNumber = addressEntryBytes[17];
-                            byte address1 = addressEntryBytes[18];
-                            byte address2 = addressEntryBytes[19];
-                            byte address3 = addressEntryBytes[20];
-
-                            byte localData1 = addressEntryBytes[21];
-                            byte localData2 = addressEntryBytes[22];
-                            byte localData3 = addressEntryBytes[23];
-
-                            AddressRecord record = new AddressRecord(type, groupNumber, 
-                                new DeviceAddress(address1, address2, address3), 
-                                localData1, localData2, localData3);
-
-                            addressRecords.Add(record);
-                        }
-                    }
-                }
             }
             catch (Exception ex)
             {
 
             }
-
-            return addressRecords;
         }
 
         private Device FindDeviceForAddress(string address)
@@ -769,6 +874,41 @@ namespace Insteon.Library
 
             return command;
 
+        }
+
+        public void GetALDBForAllDevices()
+        {
+            foreach (string key in _allDevices.Keys)
+            {
+                if (_allDevices[key].Name == "plm")
+                    continue;
+                log.Info(string.Format("Getting ALDB records for {0}", _allDevices[key].Name));
+
+                GetAddressRecords(_allDevices[key].Address);
+                LastALDBEntryRead += new InsteonTrafficHandler(InsteonHandler_LastALDBEntryRead);
+
+                DateTime addressReadStartTime = DateTime.Now;
+                _readingALDB = true;
+                while (true)
+                {
+                    // if more than 10 seconds have elapsed stop waiting on records
+                    if (addressReadStartTime.AddSeconds(10) < DateTime.Now)
+                    {
+                        log.Warn("Giving up after waiting 10 seconds for ALDB read.");
+                        break;
+                    }
+
+                    if (!_readingALDB)
+                        break;
+                }
+
+                LastALDBEntryRead -= new InsteonTrafficHandler(InsteonHandler_LastALDBEntryRead);
+            }
+        }
+
+        void InsteonHandler_LastALDBEntryRead(object sender, InsteonTrafficEventArgs e)
+        {
+            _readingALDB = false;
         }
 
     }

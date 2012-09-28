@@ -23,6 +23,7 @@ namespace Slapsteon.UI
         private InsteonHandler _handler;
         private int _deviceSelectedIndex = -1;
         private Device _selectedDevice;
+        private bool _readingALDB = false;
 
         public MainForm()
         {
@@ -44,6 +45,8 @@ namespace Slapsteon.UI
             InitializeComponent();
             _handler = new InsteonHandler(_serialPort, _allDevices);
             _handler.EnableMonitorMode();
+            Thread.Sleep(500);
+            _handler.GetALDBForAllDevices();
 
             _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(InsteonTrafficDetected);
         }
@@ -181,12 +184,37 @@ namespace Slapsteon.UI
         {
             try
             {
-                List<AddressRecord> addressRecords = _handler.GetAddressRecords(_selectedDevice.Address);
+                _handler.GetAddressRecords(_selectedDevice.Address);
+
+                _handler.LastALDBEntryRead += new InsteonHandler.InsteonTrafficHandler(_handler_LastALDBEntryRead);
+
+                DateTime addressReadStartTime = DateTime.Now;
+                _readingALDB = true;
+                while (true)
+                {
+                    // if more than 10 seconds have elapsed stop waiting on records
+                    if (addressReadStartTime.AddSeconds(10) < DateTime.Now)
+                    {
+                        log.Warn("Giving up after waiting 10 seconds for ALDB read.");
+                        break;
+                    }
+
+                    if (!_readingALDB)
+                        break;
+                }
+
+                _handler.LastALDBEntryRead -= new InsteonHandler.InsteonTrafficHandler(_handler_LastALDBEntryRead);
             }
             catch (Exception ex)
             {
 
             }
+        }
+
+        void _handler_LastALDBEntryRead(object sender, InsteonTrafficEventArgs e)
+        {
+            _readingALDB = false;
+
         }
     }
 }

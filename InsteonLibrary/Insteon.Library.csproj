@@ -48,6 +48,10 @@
   <ItemGroup>
     <Compile Include="AddressEntryType.cs" />
     <Compile Include="AddressRecord.cs" />
+    <Compile Include="Configuration\SlapsteonConfigurationElement.cs" />
+    <Compile Include="Configuration\SlapsteonConfigurationElementCollection.cs" />
+    <Compile Include="Configuration\SlapsteonConfigurationSection.cs" />
+    <Compile Include="Configuration\SlapsteonDeviceConfigurationElement.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Device.cs" />
     <Compile Include="DeviceAddress.cs" />
@@ -64,6 +68,7 @@
     <Compile Include="SwitchLinc.cs" />
     <Compile Include="SwitchLincDimmer.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

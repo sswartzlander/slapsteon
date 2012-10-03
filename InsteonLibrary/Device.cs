@@ -19,7 +19,10 @@ namespace Insteon.Library
         public DateTime LastOff { get; set; }
         public DateTime NextOff { get; set; }
         public decimal Status { get; set; }
+        public byte Delta { get; set; }
         public string Name { get; set; }
+        public bool IsPLM { get; set; }
+        public bool IsDimmable { get; set; }
 
         private Dictionary<string,AddressRecord> _aldb;
         public Dictionary<string,AddressRecord> ALDB

@@ -5,6 +5,8 @@ using System.Text;
 using log4net;
 using System.IO.Ports;
 using System.Threading;
+using Insteon.Library.Configuration;
+using System.Configuration;
 
 namespace Insteon.Library
 {
@@ -14,20 +16,51 @@ namespace Insteon.Library
         public delegate void InsteonTrafficHandler(object sender, InsteonTrafficEventArgs e);
 
         public event InsteonTrafficHandler InsteonTrafficDetected;
-        public event InsteonTrafficHandler LastALDBEntryRead;
 
         private SerialPort _plm;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private Thread _monitorModeThread;
-        private bool _readingALDB = false;
+
+        private bool _gettingStatus = false;
+        private object _statusSyncObject = new object();
+
+        private EventWaitHandle _aldbEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
+        private EventWaitHandle _statusEventWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
 
         private Dictionary<string,Device> _allDevices = new Dictionary<string,Device>();
 
-        public InsteonHandler(string comPort, List<Device> devices)
+        public Dictionary<string, Device> AllDevices
         {
-            foreach (Device device in devices)
+            get
             {
-                _allDevices.Add(device.Address.ToString(), device);
+                return _allDevices;
+            }
+        }
+
+        public InsteonHandler(string comPort)
+        {
+            // read the configuration file
+            SlapsteonConfigurationSection slapsteonConfiguration = 
+                ConfigurationManager.GetSection("slapsteon") as SlapsteonConfigurationSection;
+
+            if (null == slapsteonConfiguration)
+                throw new ConfigurationErrorsException("The configuration needs a <slapsteon> section.");
+
+            foreach (SlapsteonDeviceConfigurationElement element in slapsteonConfiguration.SlapsteonDevices)
+            {
+                string deviceName = element.Name;
+
+                byte address1 = StringToByte(element.Address.Substring(0, 2));
+                byte address2 = StringToByte(element.Address.Substring(2, 2));
+                byte address3 = StringToByte(element.Address.Substring(4, 2));
+                
+                DeviceAddress deviceAddress= new DeviceAddress(address1, address2, address3);
+                Device dev = new Device(deviceName, deviceAddress);
+
+                dev.IsPLM = element.IsPLM ?? false;
+                dev.IsDimmable = element.IsDimmable ?? false;
+
+                _allDevices.Add(deviceAddress.ToString(), dev);
             }
 
             try
@@ -47,89 +80,89 @@ namespace Insteon.Library
 
         private byte[] _lastSentCommand;
 
-        public void ParseCommand(byte[] commandBytes)
-        {
-            //if (commandBytes.Length < 5)
-            //{
-            //    log.Error(string.Format("Received command not of sufficient length ({0}), command: {1}", commandBytes.Length, BytesToString(commandBytes)));
-            //    return;
-            //}
+        //public void ParseCommand(byte[] commandBytes)
+        //{
+        //    //if (commandBytes.Length < 5)
+        //    //{
+        //    //    log.Error(string.Format("Received command not of sufficient length ({0}), command: {1}", commandBytes.Length, BytesToString(commandBytes)));
+        //    //    return;
+        //    //}
 
-            if (commandBytes[0] != 0x02)
-            {
-                log.Error(string.Format("Received Command must start with 0x02.  Received command: {0}", BytesToString(commandBytes)));
-                return;
-            }
+        //    if (commandBytes[0] != 0x02)
+        //    {
+        //        log.Error(string.Format("Received Command must start with 0x02.  Received command: {0}", BytesToString(commandBytes)));
+        //        return;
+        //    }
 
-            // determine whether the command is an ack
-            if (CompareToLastSentCommand(commandBytes))
-            {
-                // no need to parse ACK commands
-                if (commandBytes[_lastSentCommand.Length] == 0x06)
-                {
-                    if (commandBytes.Length > _lastSentCommand.Length + 1)
-                    {
-                        byte[] remainingBytes = new byte[commandBytes.Length - (_lastSentCommand.Length + 1)];
-                        Buffer.BlockCopy(commandBytes, _lastSentCommand.Length + 1, remainingBytes, 0, remainingBytes.Length);
-                        ParseCommand(remainingBytes);
+        //    // determine whether the command is an ack
+        //    if (CompareToLastSentCommand(commandBytes))
+        //    {
+        //        // no need to parse ACK commands
+        //        if (commandBytes[_lastSentCommand.Length] == 0x06)
+        //        {
+        //            if (commandBytes.Length > _lastSentCommand.Length + 1)
+        //            {
+        //                byte[] remainingBytes = new byte[commandBytes.Length - (_lastSentCommand.Length + 1)];
+        //                Buffer.BlockCopy(commandBytes, _lastSentCommand.Length + 1, remainingBytes, 0, remainingBytes.Length);
+        //                ParseCommand(remainingBytes);
 
-                    }
+        //            }
 
-                    _lastSentCommand = null;
-                    return;
-                }
-                else if (commandBytes[_lastSentCommand.Length] == 0x15)
-                {
-                    log.Warn(string.Format("Received NAK for Command {0}", BytesToString(commandBytes)));
-                    _lastSentCommand = null;
-                    return;
-                }
-            }
+        //            _lastSentCommand = null;
+        //            return;
+        //        }
+        //        else if (commandBytes[_lastSentCommand.Length] == 0x15)
+        //        {
+        //            log.Warn(string.Format("Received NAK for Command {0}", BytesToString(commandBytes)));
+        //            _lastSentCommand = null;
+        //            return;
+        //        }
+        //    }
 
-            if (0x50 == commandBytes[1]) // STD message received (11 bytes)
-            {
-                if (commandBytes.Length < 11)
-                {
-                    log.Error(string.Format("Bad standard command received {0}", BytesToString(commandBytes)));
-                    return;
-                }
+        //    if (0x50 == commandBytes[1]) // STD message received (11 bytes)
+        //    {
+        //        if (commandBytes.Length < 11)
+        //        {
+        //            log.Error(string.Format("Bad standard command received {0}", BytesToString(commandBytes)));
+        //            return;
+        //        }
 
-                byte[] singleCommand = new byte[11];
-                for (int i = 0; i < 11; i++)
-                {
-                    singleCommand[i]=commandBytes[i];
+        //        byte[] singleCommand = new byte[11];
+        //        for (int i = 0; i < 11; i++)
+        //        {
+        //            singleCommand[i]=commandBytes[i];
 
-                }
+        //        }
 
-                ProcessStandardReceivedMessage(singleCommand);
+        //        ProcessStandardReceivedMessage(singleCommand);
 
-                if (commandBytes.Length > 11)
-                {
-                    byte[] remainingBytes = new byte[commandBytes.Length - 11];
-                    Buffer.BlockCopy(commandBytes, 11, remainingBytes, 0, commandBytes.Length - 11);
-                    ParseCommand(remainingBytes);
-                }
-            }
-            else if (0x51 == commandBytes[1]) // EXT message received 
-            {
-                if (commandBytes.Length < 25)
-                {
-                    log.Error(string.Format("Bad extended command received {0}", BytesToString(commandBytes)));
-                    return;
-                }
+        //        if (commandBytes.Length > 11)
+        //        {
+        //            byte[] remainingBytes = new byte[commandBytes.Length - 11];
+        //            Buffer.BlockCopy(commandBytes, 11, remainingBytes, 0, commandBytes.Length - 11);
+        //            ParseCommand(remainingBytes);
+        //        }
+        //    }
+        //    else if (0x51 == commandBytes[1]) // EXT message received 
+        //    {
+        //        if (commandBytes.Length < 25)
+        //        {
+        //            log.Error(string.Format("Bad extended command received {0}", BytesToString(commandBytes)));
+        //            return;
+        //        }
 
-                byte[] singleCommand = new byte[25];
-                for (int i = 0; i < 25; i++)
-                {
-                    singleCommand[i]=commandBytes[i];
-                }
-            }
-        }
+        //        byte[] singleCommand = new byte[25];
+        //        for (int i = 0; i < 25; i++)
+        //        {
+        //            singleCommand[i]=commandBytes[i];
+        //        }
+        //    }
+        //}
 
-        public void SetLastCommand(byte[] cmd)
-        {
-            _lastSentCommand = cmd;
-        }
+        //public void SetLastCommand(byte[] cmd)
+        //{
+        //    _lastSentCommand = cmd;
+        //}
 
         private void ProcessStandardReceivedMessage(byte[] message)
         {
@@ -185,7 +218,36 @@ namespace Insteon.Library
             byte command2=message[10];
 
             string commandType = "unknown";
-            Device dev = FindDeviceForAddress(toAddress.ToString());
+            Device dev = FindDeviceForAddress(fromAddress.ToString());
+
+            if (_gettingStatus)
+            {
+
+
+                //string results = BitConverter.ToString(bytesRead);
+
+                //// wait for the response
+
+                //// 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
+                // 02-50-1B-BC-C0-19-77-51-2B-03-00
+
+                //if (bytesRead[8] != 0x06)
+                //    throw new Exception("ACK bit was not 0x06 for status command.");
+
+                //// read the command2 and 1 of the response
+
+                byte level = message[10];
+                byte delta = message[9];
+
+                //status.OnLevel = level;
+                //status.Delta = delta;
+
+                dev.Status = ((int)level / 255m) * 100m;
+                dev.Delta = delta;
+
+                _statusEventWaitHandle.Set();
+            }
+
             switch (command1)
             {
                 case Constants.STD_COMMAND_BEEP:
@@ -324,15 +386,9 @@ namespace Insteon.Library
             if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
             {
                 // last record detected...signal anything waiting for all addresses
-                if (null != LastALDBEntryRead)
-                {
-                    InsteonTrafficEventArgs args = new InsteonTrafficEventArgs();
-                    args.Source = device;
-                    args.Description = "Finished reading ALDB";
-                    args.Command1 = 0x2F;
 
-                    LastALDBEntryRead(this, args);
-                }
+                _aldbEventWaitHandle.Set();
+
                 return;
             }
 
@@ -399,9 +455,6 @@ namespace Insteon.Library
             try
             {
                 
-
-                lock (this)
-                {
                     command[0] = 0x02; // Insteon start byte
                     command[1] = 0x62; // Standard Command
                     command[2] = targetDevice.Address.Byte1;
@@ -412,18 +465,8 @@ namespace Insteon.Library
                     command[7] = command2;
 
                     _plm.Write(command, 0, 8);
-                    Thread.Sleep(250);
-                    log.Info(string.Format("Sent command {0} to device {1}.  (Command2: {2}, Flags: {3})", command1.ToString("X"), targetDevice.Name, command2.ToString("X"), flags.ToString("X")));
-                    SetLastCommand(command);
-
-                    int numberOfBytesToRead = _plm.BytesToRead;
-
-                    byte[] bytesRead = new byte[numberOfBytesToRead];
-
-                    _plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-                    results = BitConverter.ToString(bytesRead);
-                }
+                    
+                
             }
             catch (Exception ex)
             {
@@ -433,10 +476,9 @@ namespace Insteon.Library
             return results;
         }
 
-        public string SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
+        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
             byte ud5, byte ud6, byte ud7, byte ud8, byte ud9, byte ud10, byte ud11, byte ud12, byte ud13, byte ud14)
         {
-            string results = null;
             byte[] command = new byte[22];
 
             Device targetDevice;
@@ -472,23 +514,13 @@ namespace Insteon.Library
                     _plm.Write(command, 0, 22);
                     Thread.Sleep(250);
                     log.Info(string.Format("Sent command {0} to device {1}.  (Command2: {2}, Flags: {3})", command1.ToString("X"), targetDevice.Name, command2.ToString("X"), flags.ToString("X")));
-                    SetLastCommand(command);
-                    Thread.Sleep(10000);
-                    int numberOfBytesToRead = _plm.BytesToRead;
-
-                    byte[] bytesRead = new byte[numberOfBytesToRead];
-
-                    _plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-                    results = BitConverter.ToString(bytesRead);
+                    _lastSentCommand = command;
                 }
             }
             catch (Exception ex)
             {
                 log.Error(string.Format("Error sending command {0} to {1}. (Flags: {2})", command1.ToString("X"), targetDevice.Name, flags.ToString("X")), ex);
             }
-
-            return results;
         }
 
         public DeviceStatus GetDeviceStatus(DeviceAddress deviceAddress)
@@ -497,48 +529,30 @@ namespace Insteon.Library
             DeviceStatus status = new DeviceStatus();
             try
             {
-                lock (this)
-                {
-                    // send a get status command
-                    command[0] = 0x02;
-                    command[1] = 0x62;
-                    command[2] = deviceAddress.Byte1;
-                    command[3] = deviceAddress.Byte2;
-                    command[4] = deviceAddress.Byte3;
-                    command[5] = 0x03;
-                    command[6] = Constants.STD_COMMAND_STATUS_REQUEST;
-                    command[7] = 0x00;
+                // send a get status command
+                command[0] = 0x02;
+                command[1] = 0x62;
+                command[2] = deviceAddress.Byte1;
+                command[3] = deviceAddress.Byte2;
+                command[4] = deviceAddress.Byte3;
+                command[5] = 0x03;
+                command[6] = Constants.STD_COMMAND_STATUS_REQUEST;
+                command[7] = 0x00;
 
-                    _plm.Write(command, 0, 8);
+                _plm.Write(command, 0, 8);
 
-                    Thread.Sleep(1000);
-                    int numberOfBytesToRead = _plm.BytesToRead;
+                _lastSentCommand = command;
 
+                _gettingStatus = true;
 
-                    if (numberOfBytesToRead < 20)
-                        throw new Exception("Not enough data received.");
+                log.Info("Calling WaitOne on StatusEventWaitHandle");
+                _statusEventWaitHandle.WaitOne(5000);
+                log.Info("StatusEventWaitHandle reset");
 
-                    byte[] bytesRead = new byte[20]; // only need 20 bytes for the ack and response
+                status = new DeviceStatus();
+                status.Delta = _allDevices[deviceAddress.ToString()].Delta;
+                status.OnLevel = _allDevices[deviceAddress.ToString()].Status;
 
-                    _plm.Read(bytesRead, 0, 20);
-
-                    string results = BitConverter.ToString(bytesRead);
-
-                    // wait for the response
-
-                    // 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
-
-                    if (bytesRead[8] != 0x06)
-                        throw new Exception("ACK bit was not 0x06 for status command.");
-
-                    // read the command2 and 1 of the response
-
-                    byte level = bytesRead[19];
-                    byte delta = bytesRead[18];
-
-                    status.OnLevel = level;
-                    status.Delta = delta;
-                }
             }
             catch (Exception ex)
             {
@@ -815,7 +829,7 @@ namespace Insteon.Library
             }
         }
 
-        public void GetAddressRecords(DeviceAddress address)
+        private void GetAddressRecords(DeviceAddress address)
         {
             try
             {
@@ -876,41 +890,55 @@ namespace Insteon.Library
 
         }
 
+        public void GetALDBForDevice(DeviceAddress address)
+        {
+            GetAddressRecords(address);
+
+            log.Info("Waiting on ALDB Event Handle");
+            _aldbEventWaitHandle.WaitOne(10000);
+            log.Info("Finished Waiting on ALDB entry.");
+        }
+
         public void GetALDBForAllDevices()
         {
             foreach (string key in _allDevices.Keys)
             {
-                if (_allDevices[key].Name == "plm")
+                // the PLM will not respond normally to this command, there are special commands for it
+                // so do not get it in this fashion
+                if (_allDevices[key].IsPLM)
                     continue;
                 log.Info(string.Format("Getting ALDB records for {0}", _allDevices[key].Name));
 
                 GetAddressRecords(_allDevices[key].Address);
-                LastALDBEntryRead += new InsteonTrafficHandler(InsteonHandler_LastALDBEntryRead);
 
-                DateTime addressReadStartTime = DateTime.Now;
-                _readingALDB = true;
-                while (true)
-                {
-                    // if more than 10 seconds have elapsed stop waiting on records
-                    if (addressReadStartTime.AddSeconds(10) < DateTime.Now)
-                    {
-                        log.Warn("Giving up after waiting 10 seconds for ALDB read.");
-                        break;
-                    }
+                log.Info("Waiting on ALDB Event Handle");
+                _aldbEventWaitHandle.WaitOne(10000);
+                log.Info("Finished Waiting on ALDB entry.");
 
-                    if (!_readingALDB)
-                        break;
-                }
-
-                LastALDBEntryRead -= new InsteonTrafficHandler(InsteonHandler_LastALDBEntryRead);
             }
         }
 
-        void InsteonHandler_LastALDBEntryRead(object sender, InsteonTrafficEventArgs e)
+        private byte StringToByte(string input)
         {
-            _readingALDB = false;
-        }
+            byte retVal = 0x00;
 
+            if (string.IsNullOrEmpty(input))
+                return 0x00;
+
+            string trimmed = null;
+            if (input.StartsWith("0x"))
+                trimmed = input.Substring(2);
+            else if (input.Contains('x'))
+                trimmed = input.Substring(input.IndexOf('x') + 1);
+            else trimmed = input;
+
+            if (trimmed.Length > 2)
+                trimmed = trimmed.Substring(0, 2);
+
+            retVal = (byte)Int32.Parse(trimmed, System.Globalization.NumberStyles.HexNumber);
+
+            return retVal;
+        }
     }
 
     

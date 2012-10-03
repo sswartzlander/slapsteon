@@ -7,7 +7,7 @@ namespace Insteon.Library
 {
     public class DeviceStatus
     {
-        public byte OnLevel { get; set; }
+        public decimal OnLevel { get; set; }
         public byte Delta { get; set; }
     }
 }

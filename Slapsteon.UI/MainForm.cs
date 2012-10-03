@@ -30,32 +30,31 @@ namespace Slapsteon.UI
             log4net.Config.XmlConfigurator.Configure();
 
             log.Info("Starting application.");
-            // set up devices
-            _allDevices.Add(new Device("coachLights", new DeviceAddress(0x17, 0xF3, 0x23)));
-            _allDevices.Add(new Device("gameroomDimmer", new DeviceAddress(0x1B, 0xBC, 0xC0)));
-            _allDevices.Add(new Device("livingroomDimmer", new DeviceAddress(0x1B, 0xBE, 0xCC)));
-            _allDevices.Add(new Device("mbrDimmer", new DeviceAddress(0x1B, 0xB0, 0xB9)));
-            _allDevices.Add(new Device("mbrMulti", new DeviceAddress(0x19, 0x2B, 0xD4)));
-            _allDevices.Add(new Device("kitchenMultiSolo", new DeviceAddress(0x19, 0x2B, 0x89)));
-            _allDevices.Add(new Device("kitchenMulti", new DeviceAddress(0x19, 0x2A, 0x4D)));
-            _allDevices.Add(new Device("breakfastDimmer", new DeviceAddress(0x1B, 0xBF, 0x6E)));
-            _allDevices.Add(new Device("frontDoorHigh", new DeviceAddress(0x19, 0x2B, 0x83)));
-            _allDevices.Add(new Device("plm", new DeviceAddress(0x19, 0x77, 0x51)));
+            
 
             InitializeComponent();
-            _handler = new InsteonHandler(_serialPort, _allDevices);
+            _handler = new InsteonHandler(_serialPort);
             _handler.EnableMonitorMode();
             Thread.Sleep(500);
-            _handler.GetALDBForAllDevices();
 
+            //_handler.GetALDBForAllDevices();
+
+            foreach (string key in _handler.AllDevices.Keys)
+            {
+                _allDevices.Add(_handler.AllDevices[key]);
+            }
+            
             _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(InsteonTrafficDetected);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            dgvDevices.DataSource = _allDevices;
+            dgvDevices.DataSource =  _allDevices;
             dgvDevices.Columns["Address"].Visible = false;
-            //dgcName.
+            dgvDevices.Columns["Delta"].Visible = false;
+            dgvDevices.Columns["IsPLM"].Visible = false;
+            dgvDevices.Columns["IsDimmable"].Visible = false;
+            dgvDevices.Columns["ALDB"].Visible = false;
         }
 
         private void btnSendStdCommand_Click(object sender, EventArgs e)
@@ -111,10 +110,8 @@ namespace Slapsteon.UI
             byte ud13 = StringToByte(txtUD13.Text);
             byte ud14 = StringToByte(txtUD14.Text);
 
-            string commandResult = _handler.SendExtendedCommand(_selectedDevice.Address, cmd1, cmd2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
+            _handler.SendExtendedCommand(_selectedDevice.Address, cmd1, cmd2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
                 ud9, ud10, ud11, ud12, ud13, ud14);
-
-            rtCommandResults.Text = commandResult;
 
         }
 
@@ -147,7 +144,7 @@ namespace Slapsteon.UI
             {
                 DeviceStatus status = _handler.GetDeviceStatus(_selectedDevice.Address);
 
-                lblOnLevel.Text = status.OnLevel.ToString("X");
+                lblOnLevel.Text = status.OnLevel.ToString();
                 lblDelta.Text = status.Delta.ToString("X");
             }
             catch (Exception ex)
@@ -184,37 +181,13 @@ namespace Slapsteon.UI
         {
             try
             {
-                _handler.GetAddressRecords(_selectedDevice.Address);
+                _handler.GetALDBForDevice(_selectedDevice.Address);
 
-                _handler.LastALDBEntryRead += new InsteonHandler.InsteonTrafficHandler(_handler_LastALDBEntryRead);
-
-                DateTime addressReadStartTime = DateTime.Now;
-                _readingALDB = true;
-                while (true)
-                {
-                    // if more than 10 seconds have elapsed stop waiting on records
-                    if (addressReadStartTime.AddSeconds(10) < DateTime.Now)
-                    {
-                        log.Warn("Giving up after waiting 10 seconds for ALDB read.");
-                        break;
-                    }
-
-                    if (!_readingALDB)
-                        break;
-                }
-
-                _handler.LastALDBEntryRead -= new InsteonHandler.InsteonTrafficHandler(_handler_LastALDBEntryRead);
             }
             catch (Exception ex)
             {
 
             }
-        }
-
-        void _handler_LastALDBEntryRead(object sender, InsteonTrafficEventArgs e)
-        {
-            _readingALDB = false;
-
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Insteon
                 if (!string.IsNullOrEmpty(serialPort))
                     _serialPort = serialPort;
 
-                _handler = new InsteonHandler(_serialPort, _allDevices);
+                _handler = new InsteonHandler(_serialPort);
                 _handler.EnableMonitorMode();
 
 

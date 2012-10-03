@@ -70,7 +70,7 @@ namespace Insteon.WindowsService
                     _serialPort = serialPort;
 
 
-                _handler = new InsteonHandler(serialPort, _allDevices);
+                _handler = new InsteonHandler(serialPort);
                 _handler.EnableMonitorMode();
 
                 SetServiceState(State.SERVICE_START_PENDING);

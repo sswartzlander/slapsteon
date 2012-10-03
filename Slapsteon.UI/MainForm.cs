@@ -37,7 +37,7 @@ namespace Slapsteon.UI
             _handler.EnableMonitorMode();
             Thread.Sleep(500);
 
-            //_handler.GetALDBForAllDevices();
+            _handler.GetALDBForAllDevices();
 
             foreach (string key in _handler.AllDevices.Keys)
             {

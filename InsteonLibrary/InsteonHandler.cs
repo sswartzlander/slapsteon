@@ -25,7 +25,7 @@ namespace Insteon.Library
         private object _statusSyncObject = new object();
 
         private EventWaitHandle _aldbEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-        private EventWaitHandle _statusEventWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+        private EventWaitHandle _statusEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
         private Dictionary<string,Device> _allDevices = new Dictionary<string,Device>();
 
@@ -545,6 +545,7 @@ namespace Insteon.Library
 
                 _gettingStatus = true;
 
+                _statusEventWaitHandle.Reset();
                 log.Info("Calling WaitOne on StatusEventWaitHandle");
                 _statusEventWaitHandle.WaitOne(5000);
                 log.Info("StatusEventWaitHandle reset");

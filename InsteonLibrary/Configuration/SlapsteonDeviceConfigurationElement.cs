@@ -65,6 +65,12 @@ namespace Insteon.Library.Configuration
             return Address;
         }
 
+        [ConfigurationProperty("slaveDevices", IsKey = false, IsRequired = false)]
+        public string SlaveDevices
+        {
+            get { return this["slaveDevices"] as string; }
+            set { this["slaveDevices"] = value; }
+        }
 
     }
 }

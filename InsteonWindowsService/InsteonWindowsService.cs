@@ -69,11 +69,16 @@ namespace Insteon.WindowsService
                 if (!string.IsNullOrEmpty(serialPort))
                     _serialPort = serialPort;
 
+                SetServiceState(State.SERVICE_START_PENDING);
 
                 _handler = new InsteonHandler(serialPort);
                 _handler.EnableMonitorMode();
+                Thread.Sleep(500);
+                _handler.GetALDBForAllDevices();
+                _handler.GetStatusForAllDevices();
 
-                SetServiceState(State.SERVICE_START_PENDING);
+                _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(_handler_InsteonTrafficDetected);
+
 
                 Thread serviceStartThread = new Thread(delegate()
                 {
@@ -96,6 +101,11 @@ namespace Insteon.WindowsService
             }
             log.Info("Finished Starting Insteon Service.");
 
+        }
+
+        void _handler_InsteonTrafficDetected(object sender, InsteonTrafficEventArgs e)
+        {
+            
         }
 
         protected override void OnStop()
@@ -164,7 +174,7 @@ namespace Insteon.WindowsService
                     {
                         if (DateTime.Now.Hour >= 20 || DateTime.Now.Hour < 7)
                         {
-                            _insteonWebService.FastOn(coachLights.Address);
+                            _insteonWebService.FastOn("coachLights");
                             coachLights.Status = 1;
                             coachLights.LastOn = DateTime.Now;
                             log.Info(string.Format("Turned coach lights on at {0}", DateTime.Now));
@@ -175,7 +185,7 @@ namespace Insteon.WindowsService
                     {
                         if (DateTime.Now.Hour >= 7 && DateTime.Now.Hour < 20)
                         {
-                            _insteonWebService.FastOff(coachLights.Address);
+                            _insteonWebService.Off("coachLights");
                             coachLights.Status = 0;
                             coachLights.LastOff = DateTime.Now;
                             log.Info(string.Format("Turned coach lights off at {0}", DateTime.Now));
@@ -191,7 +201,7 @@ namespace Insteon.WindowsService
                     {
                         if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 1)
                         {
-                            _insteonWebService.FastOn(frontDoorHigh.Address);
+                            _insteonWebService.FastOn("frontdoorHigh");
                             frontDoorHigh.Status = 1;
                             frontDoorHigh.LastOn = DateTime.Now;
                             log.Info(string.Format("Turned front door high light on at {0}", DateTime.Now));
@@ -202,7 +212,7 @@ namespace Insteon.WindowsService
                     {
                         if (DateTime.Now.Hour >= 1 && DateTime.Now.Hour < 21)
                         {
-                            _insteonWebService.FastOff(frontDoorHigh.Address);
+                            _insteonWebService.Off("frontdoorHigh");
                             frontDoorHigh.Status = 0;
                             frontDoorHigh.LastOff = DateTime.Now;
                             log.Info(string.Format("Turned front door high light off at {0}", DateTime.Now));

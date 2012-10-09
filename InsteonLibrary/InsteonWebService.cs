@@ -40,560 +40,7 @@ namespace Insteon.Library
             _handler = handler;
         }
 
-        public void GameroomDimmerOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOn(_gameroomDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-
-        }
-
-        public void GameroomDimmerOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOff(_gameroomDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void LivingRoomDimmerOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOn(_livingroomDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                log.Error("Error occurred in LivingRoomDimmerOn: " + ex.Message);
-                log.Error(ex.StackTrace);
-                
-            }
-        }
-
-        public void LivingRoomDimmerOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOff(_livingroomDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void LivingRoomDimmerRampOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                RampOn(_livingroomDimmer, 0xF0, 0x05);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void LivingRoomDimmerRampOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                RampOff(_livingroomDimmer, 0x05);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOff(_mbrDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerOn100()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOn(_mbrDimmer);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerOn30()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                On(_mbrDimmer, 0x4c);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerRampOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                RampOn(_mbrDimmer, 0xF0, 0x03);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerRampOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                RampOff(_mbrDimmer, 0x04);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerOn40()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                On(_mbrDimmer, 0x68);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRDimmerOn70()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                On(_mbrDimmer, 0xB3);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void KitchenMultiOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOn(_kitchenMulti);
-                Thread.Sleep(200);
-                FastOn(_kitchenMultiSolo);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void KitchenMultiOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOff(_kitchenMulti);
-                Thread.Sleep(200);
-                FastOff(_kitchenMultiSolo);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRMultiOn()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOn(_MBRMulti);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void MBRMultiOff()
-        {
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                FastOff(_MBRMulti);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public string GetAddressTable(string name)
-        {
-            //string addressTable = "Bad device specified";
-
-            //DeviceAddress insteonAddress = null;
-
-            //switch (name.ToUpper())
-            //{
-            //    case "GAMEROOMDIMMER":
-            //        insteonAddress = _gameroomDimmer;
-            //        break;
-            //    case "LIVINGROOMDIMMER":
-            //        insteonAddress = _livingroomDimmer;
-            //        break;
-            //    case "MBRDIMMER":
-            //        insteonAddress = _mbrDimmer;
-            //        break;
-            //    case "MBRMULTI":
-            //        insteonAddress = _MBRMulti;
-            //        break;
-            //    case "KITCHENMULTISOLO":
-            //        insteonAddress = _kitchenMultiSolo;
-            //        break;
-            //    case "KITCHENMULTI":
-            //        insteonAddress = _kitchenMulti;
-            //        break;
-            //    case "BREAKFASTDIMMER":
-            //        insteonAddress = _breakfastDimmer;
-            //        break;
-            //    case "COACHLIGHTS":
-            //        insteonAddress = _coachLights;
-            //        break;
-            //    case "FRONTDOORHIGH":
-            //        insteonAddress = _frontDoorHigh;
-            //        break;
-            //    case "PLM":
-            //        insteonAddress = _plmAddress;
-            //        break;
-            //    default:
-            //        return addressTable;
-            //}
-
-
-
-            //try
-            //{
-
-            //    lock (_serialLock)
-            //    {
-            //        byte[] cmdBytes = new byte[22];
-            //        cmdBytes[0] = 0x02;
-            //        cmdBytes[1] = 0x62;
-            //        cmdBytes[2] = insteonAddress.Byte1;
-            //        cmdBytes[3] = insteonAddress.Byte2;
-            //        cmdBytes[4] = insteonAddress.Byte3;
-            //        cmdBytes[5] = 0x13;
-            //        cmdBytes[6] = 0x2F;
-            //        cmdBytes[7] = 0x00;
-            //        cmdBytes[8] = 0x00;
-            //        cmdBytes[9] = 0x00;
-            //        cmdBytes[10] = 0x00;
-            //        cmdBytes[11] = 0x00;
-            //        cmdBytes[12] = 0x00;
-
-            //        _plm.Write(cmdBytes, 0, 22);
-
-            //        Thread.Sleep(800);
-            //        int numberOfBytesToRead = _plm.BytesToRead;                  
-
-            //        byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            //        _plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            //        addressTable = BitConverter.ToString(bytesRead);
-            //    }
-
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine("Error occurred: " + ex.Message);
-            //    Console.WriteLine(ex.StackTrace);
-            //    addressTable = "Error occurred: " + ex.Message;
-            //}
-
-            //return addressTable;
-            return null;
-        }
-
-        public void FastOn(DeviceAddress address)
-        {
-            FastOn(address, 0xFF);
-        }
-
-        public void On(DeviceAddress address, byte level)
-        {
-            log.Info("On called");
-            _handler.SendStandardCommand(address, Constants.STD_COMMAND_ON, level, 0x03);
-        }
-
-        public void FastOn(DeviceAddress address, byte level)
-        {
-            log.Info("FastOn called");
-
-            _handler.SendStandardCommand(address, Constants.STD_COMMAND_FAST_ON, level, 0x03);
-
-            //byte[] cmdBytes = new byte[8];
-            //cmdBytes[0] = 0x02;
-            //cmdBytes[1] = 0x62;
-            //cmdBytes[2] = address.Byte1;
-            //cmdBytes[3] = address.Byte2;
-            //cmdBytes[4] = address.Byte3;
-            //cmdBytes[5] = 0x03;
-            //cmdBytes[6] = 0x11;
-            //cmdBytes[7] = level;
-
-            //plm.Write(cmdBytes, 0, 8);
-
-            //int numberOfBytesToRead = plm.BytesToRead;
-
-            //byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            //plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            //string byteString = BitConverter.ToString(bytesRead);
-        }
-
-        public void FastOff(DeviceAddress address)
-        {
-            _handler.SendStandardCommand(address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x03);
-
-            //byte[] cmdBytes = new byte[8];
-            //cmdBytes[0] = 0x02;
-            //cmdBytes[1] = 0x62;
-            //cmdBytes[2] = address.Byte1;
-            //cmdBytes[3] = address.Byte2;
-            //cmdBytes[4] = address.Byte3;
-            //cmdBytes[5] = 0x03;
-            //cmdBytes[6] = 0x14;
-            //cmdBytes[7] = 0xFF;
-
-            //plm.Write(cmdBytes, 0, 8);
-
-            //int numberOfBytesToRead = plm.BytesToRead;
-
-            //byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            //plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            //string byteString = BitConverter.ToString(bytesRead);
-        }
-
-        public void RampOn(DeviceAddress address, byte brightness, byte rampRate)
-        {
-            byte rampByte = (byte)(brightness | rampRate);
-
-            _handler.SendStandardCommand(address, Constants.STD_COMMAND_LIGHT_RAMP_ON, rampByte, 0x03);
-
-            //byte[] cmdBytes = new byte[8];
-            //cmdBytes[0] = 0x02;
-            //cmdBytes[1] = 0x62;
-            //cmdBytes[2] = address.Byte1;
-            //cmdBytes[3] = address.Byte2;
-            //cmdBytes[4] = address.Byte3;
-            //cmdBytes[5] = 0x03;
-            //cmdBytes[6] = 0x2E; // ramp on
-            //cmdBytes[7] = rampByte;
-
-            //plm.Write(cmdBytes, 0, 8);
-
-            //int numberOfBytesToRead = plm.BytesToRead;
-
-            //byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            //plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            //string byteString = BitConverter.ToString(bytesRead);
-        }
-
-        public void LRDOn30()
-        {
-
-            try
-            {
-                //SerialPort plm = new SerialPort(_serialPort, 19200, Parity.None, 8, StopBits.One);
-                //plm.Open();
-
-                On(_livingroomDimmer, 0x4c);
-
-                //plm.Close();
-                //plm.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error occurred: " + ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-        }
-
-        public void RampOff(DeviceAddress address, byte rampRate)
-        {
-            byte rampByte = (byte)(0x0F & rampRate);
-
-            _handler.SendStandardCommand(address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampByte, 0x03);
-
-
-            //byte[] cmdBytes = new byte[8];
-            //cmdBytes[0] = 0x02;
-            //cmdBytes[1] = 0x62;
-            //cmdBytes[2] = address.Byte1;
-            //cmdBytes[3] = address.Byte2;
-            //cmdBytes[4] = address.Byte3;
-            //cmdBytes[5] = 0x03;
-            //cmdBytes[6] = 0x2F; // ramp off
-            //cmdBytes[7] = rampByte;
-
-            //plm.Write(cmdBytes, 0, 8);
-
-            //int numberOfBytesToRead = plm.BytesToRead;
-
-            //byte[] bytesRead = new byte[numberOfBytesToRead];
-
-            //plm.Read(bytesRead, 0, numberOfBytesToRead);
-
-            //string byteString = BitConverter.ToString(bytesRead);
-        }
+   
 
         public void Alarm(string x, string y)
         {
@@ -606,16 +53,15 @@ namespace Insteon.Library
 
                 if (xGuid != _x && yGuid != _y)
                     return;
-
-                LivingRoomDimmerOn();
-
-                Thread.Sleep(500);
-
-                KitchenMultiOn();
+                FastOn("livingroomDimmer");
 
                 Thread.Sleep(500);
 
-                FastOn(_breakfastDimmer);
+                FastOn("kitchenMulti");
+
+                Thread.Sleep(500);
+
+                FastOn("breakfastDimmer");
 
                 StreamReader outputReader;
                 log.Info("Playing Alarm sound now.");
@@ -683,6 +129,124 @@ namespace Insteon.Library
                 log.Error(string.Format("Error occurred playing Alarm: {0}", ex.Message));
                 log.Error(ex.StackTrace);
             }
+        }
+
+        public Device GetDevice(string name)
+        {
+            Device device = null;
+
+            foreach (string key in _handler.AllDevices.Keys)
+            {
+                if (_handler.AllDevices[key].Name.ToUpper() == name.ToUpper())
+                {
+                    device = _handler.AllDevices[key];
+                    break;
+                }
+            }
+
+            return device;
+        }
+
+        public Device[] GetDevices()
+        {
+            return _handler.AllDevices.Values.ToArray();            
+        }
+
+        public void FastOn(string device)
+        {
+            Device dev = GetDevice(device);
+
+            if (null == dev)
+                return;
+
+            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x07);
+        }
+
+        public void On(string device, string level)
+        {
+            int levelValue;
+            if (!int.TryParse(level, out levelValue))
+            {
+                log.Warn("Invalid level value: " + level);
+                return;
+            }
+
+            Device dev = GetDevice(device);
+
+            if (null == dev)
+                return;
+
+            byte byteLevel = (byte)(int)(levelValue * 2.55);
+
+            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x07);
+        }
+
+        public void RampOn(string device, string level, string rate)
+        {
+            int levelValue;
+            if (!int.TryParse(level, out levelValue))
+            {
+                log.Warn("Invalid level value: " + level);
+                return;
+            }
+
+            int rateValue;
+            if (!int.TryParse(rate, out rateValue))
+            {
+                log.Warn("Invalid rate value: " + rate);
+                return;
+            }
+
+
+            Device dev = GetDevice(device);
+
+            if (null == dev)
+                return;
+
+            // command2 is brightness & ramp rate... all in 1 byte... 
+            // so there are only 16 possible increments of each
+
+            byte brighthessByte = (byte)((byte)(int)(levelValue / 6.25) << 4);
+            byte rampRateByte = (byte)(int)(rateValue / 6.25);
+
+            log.Debug(string.Format("Calling Ramp On, Level: {0} (0x{1}), Rate: {2}(0x{3})", levelValue, brighthessByte.ToString("X"), rateValue, rampRateByte.ToString("X").PadRight(2,'0')));
+            byte command2 = (byte)(brighthessByte | rampRateByte);
+
+            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_ON, command2, 0x07);
+        }
+
+        public void Off(string device)
+        {
+            Device dev = GetDevice(device);
+
+            if (null == dev)
+                return;
+
+            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x07);
+
+        }
+
+        public void RampOff(string device, string rate)
+        {
+            int rateValue;
+            if (!int.TryParse(rate, out rateValue))
+            {
+                log.Warn("Invalid rate value: " + rate);
+                return;
+            }
+
+            Device dev = GetDevice(device);
+
+            if (null == dev)
+                return;
+
+            // command2 is brightness & ramp rate... all in 1 byte... 
+            // so there are only 16 possible increments of each
+
+            byte rampRateByte = (byte)(int)(rateValue / 6.25);
+
+            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampRateByte, 0x07);
+
         }
     }
 }

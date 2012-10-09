@@ -63,6 +63,35 @@ namespace Insteon.Library
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
 
+            // iterate through the list once more for slave devices
+            foreach (SlapsteonDeviceConfigurationElement element in slapsteonConfiguration.SlapsteonDevices)
+            {
+                if (string.IsNullOrEmpty(element.SlaveDevices))
+                    continue;
+
+                byte address1 = StringToByte(element.Address.Substring(0, 2));
+                byte address2 = StringToByte(element.Address.Substring(2, 2));
+                byte address3 = StringToByte(element.Address.Substring(4, 2));
+
+                DeviceAddress deviceAddress = new DeviceAddress(address1, address2, address3);
+
+                string[] slaveDeviceList = element.SlaveDevices.Split(',', '|', ' ');
+                List<Device> slaveDevices = new List<Device>();
+                foreach (string slaveDeviceName in slaveDeviceList)
+                {
+                    Device slaveDevice = _allDevices.Values.FirstOrDefault(d => d.Name.ToUpper() == slaveDeviceName.ToUpper());
+
+                    if (null == slaveDevice)
+                        continue;
+
+                    slaveDevices.Add(slaveDevice);
+                }
+
+
+                _allDevices[deviceAddress.ToString()].SlaveDevices = slaveDevices;
+                log.Debug(string.Format("added {0} slave device(s) for device {1}", slaveDevices.Count, element.Name));
+            }
+
             try
             {
                 _plm = new SerialPort(comPort, 19200, Parity.None, 8, StopBits.One);
@@ -218,34 +247,53 @@ namespace Insteon.Library
             byte command2=message[10];
 
             string commandType = "unknown";
-            Device dev = FindDeviceForAddress(fromAddress.ToString());
-
-            if (_gettingStatus)
+            Device sourceDevice = FindDeviceForAddress(fromAddress.ToString());
+            Device targetDevice = FindDeviceForAddress(toAddress.ToString());
+            if (null != targetDevice && targetDevice.IsPLM)
             {
+                if (_gettingStatus)
+                {
 
 
-                //string results = BitConverter.ToString(bytesRead);
+                    //string results = BitConverter.ToString(bytesRead);
 
-                //// wait for the response
+                    //// wait for the response
 
-                //// 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
-                // 02-50-1B-BC-C0-19-77-51-2B-03-00
+                    //// 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
+                    // 02-50-1B-BC-C0-19-77-51-2B-03-00
 
-                //if (bytesRead[8] != 0x06)
-                //    throw new Exception("ACK bit was not 0x06 for status command.");
+                    //if (bytesRead[8] != 0x06)
+                    //    throw new Exception("ACK bit was not 0x06 for status command.");
 
-                //// read the command2 and 1 of the response
+                    //// read the command2 and 1 of the response
 
-                byte level = message[10];
-                byte delta = message[9];
+                    byte level = message[10];
+                    byte delta = message[9];
 
-                //status.OnLevel = level;
-                //status.Delta = delta;
+                    //status.OnLevel = level;
+                    //status.Delta = delta;
 
-                dev.Status = ((int)level / 255m) * 100m;
-                dev.Delta = delta;
+                    sourceDevice.Status = ((int)level / 255m) * 100m;
+                    sourceDevice.Delta = delta;
 
-                _statusEventWaitHandle.Set();
+                    _statusEventWaitHandle.Set();
+                }
+
+
+                // this is received before the ALDB comes, its part of a sequence of extended messages
+                // but 0x2F as a standard message is LightOffAtRampRate
+                if (command1 == 0x2F)
+                {
+                    log.Info(string.Format("Received Message from {0} to {1} of type: ({2}):{3} ({4})", GetDeviceName(fromAddress.ToString()), GetDeviceName(toAddress.ToString()), command1.ToString("X"), command2.ToString("X"), flagDescription));
+                    log.Info("Beginning of ALDB records.");
+                    return;
+                } // same as above but for reading device info
+                else if (command1 == 0x2E)
+                {
+                    log.Info(string.Format("Received Message from {0} to {1} of type: ({2}):{3} ({4})", GetDeviceName(fromAddress.ToString()), GetDeviceName(toAddress.ToString()), command1.ToString("X"), command2.ToString("X"), flagDescription));
+                    log.Info("Beginning of Extended Read");
+                    return;
+                }
             }
 
             switch (command1)
@@ -285,19 +333,19 @@ namespace Insteon.Library
                     break;
 
                 case Constants.STD_COMMAND_OFF:
-                    if (null != dev)
+                    if (null != sourceDevice)
                     {
-                        dev.Status = 0;
-                        dev.LastOff = DateTime.Now;
+                        sourceDevice.Status = 0;
+                        sourceDevice.LastOff = DateTime.Now;
                     }
                     commandType = "CommandOff";
                     break;
                 case Constants.STD_COMMAND_ON:
                     
-                    if (null != dev)
+                    if (null != sourceDevice)
                     {
-                        dev.Status = 1;
-                        dev.LastOn = DateTime.Now;
+                        sourceDevice.Status = 1;
+                        sourceDevice.LastOn = DateTime.Now;
                     }
                     commandType = "CommandOn";
                     break;
@@ -320,7 +368,7 @@ namespace Insteon.Library
             // if the target is not an existing device (group target)
             // look at address entries for devices that are RESPONDERS to the 
             // address of the command, matching the group in the address..
-            if (null == dev)
+            if (null == targetDevice)
             {
                 foreach (string i in _allDevices.Keys)
                 {
@@ -406,13 +454,17 @@ namespace Insteon.Library
             byte aldbAddress1 = message[14];
             byte aldbAddress2 = message[15];
 
+            DeviceAddress targetDeviceAddress = new DeviceAddress(address1, address2, address3);
+
+            string targetDeviceName = _allDevices[targetDeviceAddress.ToString()].Name;
+
             string aldbOffset = string.Format("{0}{1}",aldbAddress1.ToString("X"),aldbAddress2.ToString("X"));
 
             AddressRecord record = new AddressRecord(type, groupNumber,
-                new DeviceAddress(address1, address2, address3),
+                targetDeviceAddress,
                 localData1, localData2, localData3);
             record.AddressOffset = aldbOffset;
-
+            record.AddressDeviceName = targetDeviceName;
        
 
             if (device.ALDB.ContainsKey(aldbOffset))
@@ -446,27 +498,49 @@ namespace Insteon.Library
         public string SendStandardCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags)
         {
             string results = null;
-            byte[] command = new byte[8];
 
             Device targetDevice;
             if (!_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
                 throw new Exception("No known device matched the specified address.");
 
+            byte[] command = new byte[8];
+
+
             try
             {
-                
+
+                command[0] = 0x02; // Insteon start byte
+                command[1] = 0x62; // Standard Command
+                command[2] = targetDevice.Address.Byte1;
+                command[3] = targetDevice.Address.Byte2;
+                command[4] = targetDevice.Address.Byte3;
+                command[5] = flags; // for standard 0x0F is good
+                command[6] = command1;
+                command[7] = command2;
+
+                _plm.Write(command, 0, 8);
+
+                log.Debug(string.Format("Sent Standard Command {0} to device {1} (address: {2})", command1.ToString("X"), targetDevice.Name, targetDevice.AddressString));
+
+                // write more to the command for slave devices
+                foreach (Device slaveDevice in targetDevice.SlaveDevices)
+                {
+                    Thread.Sleep(250);
+                    log.Debug(string.Format("Sending duplicate command {0} for slave device {1} (address: {2})", command1.ToString("X"), slaveDevice.Name, slaveDevice.AddressString));
+                    command = new byte[8];
+
                     command[0] = 0x02; // Insteon start byte
                     command[1] = 0x62; // Standard Command
-                    command[2] = targetDevice.Address.Byte1;
-                    command[3] = targetDevice.Address.Byte2;
-                    command[4] = targetDevice.Address.Byte3;
+                    command[2] = slaveDevice.Address.Byte1;
+                    command[3] = slaveDevice.Address.Byte2;
+                    command[4] = slaveDevice.Address.Byte3;
                     command[5] = flags; // for standard 0x0F is good
                     command[6] = command1;
                     command[7] = command2;
 
                     _plm.Write(command, 0, 8);
-                    
-                
+                }
+
             }
             catch (Exception ex)
             {
@@ -552,8 +626,9 @@ namespace Insteon.Library
 
                 status = new DeviceStatus();
                 status.Delta = _allDevices[deviceAddress.ToString()].Delta;
-                status.OnLevel = _allDevices[deviceAddress.ToString()].Status;
+                status.OnLevel = Math.Round(_allDevices[deviceAddress.ToString()].Status,1);
 
+                _gettingStatus = false;
             }
             catch (Exception ex)
             {
@@ -810,7 +885,7 @@ namespace Insteon.Library
                     if (null != command)
                     {
                         string commandString = BytesToString(command);
-                        log.Info("Received command " + commandString);
+                        log.Debug("Received command " + commandString);
                     }
                 }
                 catch (Exception ex)
@@ -916,6 +991,26 @@ namespace Insteon.Library
                 _aldbEventWaitHandle.WaitOne(10000);
                 log.Info("Finished Waiting on ALDB entry.");
 
+                log.Info(string.Format("Found {0} ALDB entries for device: {1}", _allDevices[key].ALDB.Count, _allDevices[key].Name));
+
+            }
+        }
+
+        public void GetStatusForAllDevices()
+        {
+            foreach (string key in _allDevices.Keys)
+            {
+                // the PLM will not respond normally to this command, there are special commands for it
+                // so do not get it in this fashion
+                if (_allDevices[key].IsPLM)
+                    continue;
+                log.Info(string.Format("Getting Status for {0}", _allDevices[key].Name));
+
+                DeviceStatus status = GetDeviceStatus(_allDevices[key].Address);
+
+                log.Info(string.Format("Status for device: {0} was {1}", _allDevices[key].Name, (null != status ? status.OnLevel : 0m)));
+
+                _allDevices[key].Status = (null != status ? status.OnLevel : 0m);
             }
         }
 

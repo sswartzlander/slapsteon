@@ -38,6 +38,7 @@ namespace Slapsteon.UI
             Thread.Sleep(500);
 
             _handler.GetALDBForAllDevices();
+            _handler.GetStatusForAllDevices();
 
             foreach (string key in _handler.AllDevices.Keys)
             {
@@ -55,6 +56,9 @@ namespace Slapsteon.UI
             dgvDevices.Columns["IsPLM"].Visible = false;
             dgvDevices.Columns["IsDimmable"].Visible = false;
             dgvDevices.Columns["ALDB"].Visible = false;
+            dgvDevices.Columns["LastOnString"].Visible = false;
+            dgvDevices.Columns["LastOffString"].Visible = false;
+            dgvDevices.Columns["DeltaString"].Visible = false;
         }
 
         private void btnSendStdCommand_Click(object sender, EventArgs e)
@@ -181,7 +185,9 @@ namespace Slapsteon.UI
         {
             try
             {
-                _handler.GetALDBForDevice(_selectedDevice.Address);
+                ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
+                    _selectedDevice.ALDB.Values.ToList());
+                viewAddressTable.ShowDialog();
 
             }
             catch (Exception ex)

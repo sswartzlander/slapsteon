@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<publishData>
+  <publishProfile publishUrl="c:\insteon\web" deleteExistingFiles="False" ftpAnonymousLogin="False" ftpPassiveMode="True" msdeploySite="" msdeploySiteID="" msdeployRemoteSitePhysicalPath="" msdeployAllowUntrustedCertificate="False" msdeploySkipExtraFilesOnServer="True" msdeployMarkAsApp="False" profileName="Profile1" publishMethod="FileSystem" replaceMatchingFiles="True" userName="" savePWD="False" userPWD="" SelectedForPublish="True">
+    <file relUrl="Web.config" publishTime="10/10/2012 13:23:18" />
+    <file relUrl="bin/Newtonsoft.Json.dll" publishTime="06/08/2012 11:00:17" />
+    <file relUrl="bin/Newtonsoft.Json.pdb" publishTime="06/08/2012 11:00:17" />
+    <file relUrl="bin/Slapsteon.Web.dll" publishTime="10/10/2012 12:50:00" />
+    <file relUrl="Scripts/MicrosoftMvcAjax.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/MicrosoftMvcValidation.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/jquery.validate.min.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/MicrosoftAjax.debug.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Views/Home/Index.aspx" publishTime="10/10/2012 12:35:48" />
+    <file relUrl="bin/Newtonsoft.Json.xml" publishTime="06/08/2012 11:00:17" />
+    <file relUrl="Scripts/MicrosoftAjax.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/jquery-1.4.1.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Views/Web.config" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/jquery.validate.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Content/Site.css" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/MicrosoftMvcValidation.debug.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/MicrosoftMvcAjax.debug.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Global.asax" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Views/Lights/Index.aspx" publishTime="10/10/2012 02:44:46" />
+    <file relUrl="Scripts/jquery-1.4.1-vsdoc.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="bin/Slapsteon.Web.pdb" publishTime="10/10/2012 12:50:00" />
+    <file relUrl="Views/Home/List.ascx" publishTime="10/10/2012 12:59:32" />
+    <file relUrl="Scripts/jquery-1.4.1.min.js" publishTime="10/08/2012 23:52:13" />
+    <file relUrl="Scripts/jquery.validate-vsdoc.js" publishTime="10/08/2012 23:52:13" />
+  </publishProfile>
+</publishData>

@@ -23,8 +23,8 @@ namespace Insteon.Library
          Device GetDevice(string name);
 
          [OperationContract]
-         [WebGet(UriTemplate = "/Devices", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
-         Device[] GetDevices();
+         [WebGet(UriTemplate = "/Devices", RequestFormat = WebMessageFormat.Json, ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Bare)]
+         SlapsteonDevice[] GetDevices();
 
          [OperationContract]
          [WebGet(UriTemplate = "/{device}/Off", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]

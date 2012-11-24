@@ -306,9 +306,21 @@ namespace Insteon.Library
                     commandType = "Dim";
                     break;
                 case Constants.STD_COMMAND_FAST_OFF:
+                    if (null != sourceDevice)
+                    {
+                        sourceDevice.Status = 0;
+                        sourceDevice.LastOff = DateTime.Now;
+                    }
+
                     commandType = "FastOff";
                     break;
                 case Constants.STD_COMMAND_FAST_ON:
+                    if (null != sourceDevice)
+                    {
+                        sourceDevice.Status = 100;
+                        sourceDevice.LastOn = DateTime.Now;
+                    }
+
                     commandType = "FastOn";
                     break;
                 case Constants.STD_COMMAND_GET_OP_FLAGS:
@@ -322,9 +334,21 @@ namespace Insteon.Library
                     commandType = "LightManualOn";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_OFF:
+                    if (null != sourceDevice)
+                    {
+                        sourceDevice.Status = 0;
+                        sourceDevice.LastOff = DateTime.Now;
+                    }
+
                     commandType = "LightRampOff";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_ON:
+                    if (null != sourceDevice)
+                    {
+                        sourceDevice.Status = 100;
+                        sourceDevice.LastOn = DateTime.Now;
+                    }
+
                     commandType = "LightRampOn";
                     break;
 
@@ -344,7 +368,7 @@ namespace Insteon.Library
                     
                     if (null != sourceDevice)
                     {
-                        sourceDevice.Status = 1;
+                        sourceDevice.Status = 100;
                         sourceDevice.LastOn = DateTime.Now;
                     }
                     commandType = "CommandOn";

@@ -66,6 +66,7 @@
     <Compile Include="InsteonWebService.cs" />
     <Compile Include="KeypadLinc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SlapsteonDevice.cs" />
     <Compile Include="SwitchLinc.cs" />
     <Compile Include="SwitchLincDimmer.cs" />
   </ItemGroup>

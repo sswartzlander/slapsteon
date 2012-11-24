@@ -186,7 +186,7 @@ namespace Slapsteon.UI
             try
             {
                 ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
-                    _selectedDevice.ALDB.Values.ToList());
+                    _handler.AllDevices[_selectedDevice.Address.ToString()].ALDB.Values.ToList());
                 viewAddressTable.ShowDialog();
 
             }

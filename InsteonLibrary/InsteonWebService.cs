@@ -147,9 +147,27 @@ namespace Insteon.Library
             return device;
         }
 
-        public Device[] GetDevices()
+        public SlapsteonDevice[] GetDevices()
         {
-            return _handler.AllDevices.Values.ToArray();            
+            List<Device> devices = _handler.AllDevices.Values.ToList();
+
+            List<SlapsteonDevice> slapsteonDevices = new List<SlapsteonDevice>();
+
+            foreach (Device device in devices)
+            {
+                SlapsteonDevice slapsteonDevice = new SlapsteonDevice()
+                {
+                    Address = device.AddressString,
+                    LastOff = device.LastOff,
+                    LastOn = device.LastOn,
+                    Name = device.Name,
+                    Status = device.Status.ToString()
+                };
+
+                slapsteonDevices.Add(slapsteonDevice);
+            }
+
+            return slapsteonDevices.ToArray();
         }
 
         public void FastOn(string device)
@@ -158,6 +176,10 @@ namespace Insteon.Library
 
             if (null == dev)
                 return;
+
+            dev.Status = 100;
+            dev.LastOn = DateTime.Now;
+
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x07);
         }
@@ -177,6 +199,9 @@ namespace Insteon.Library
                 return;
 
             byte byteLevel = (byte)(int)(levelValue * 2.55);
+
+            dev.Status = levelValue;
+            dev.LastOn = DateTime.Now;
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x07);
         }
@@ -203,6 +228,9 @@ namespace Insteon.Library
             if (null == dev)
                 return;
 
+            dev.Status = levelValue;
+            dev.LastOn = DateTime.Now;
+
             // command2 is brightness & ramp rate... all in 1 byte... 
             // so there are only 16 possible increments of each
 
@@ -221,6 +249,9 @@ namespace Insteon.Library
 
             if (null == dev)
                 return;
+
+            dev.Status = 0;
+            dev.LastOff = DateTime.Now;
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x07);
 
@@ -242,6 +273,9 @@ namespace Insteon.Library
 
             // command2 is brightness & ramp rate... all in 1 byte... 
             // so there are only 16 possible increments of each
+
+            dev.Status = 0;
+            dev.LastOff = DateTime.Now;
 
             byte rampRateByte = (byte)(int)(rateValue / 6.25);
 

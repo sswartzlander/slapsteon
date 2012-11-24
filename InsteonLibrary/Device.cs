@@ -64,7 +64,6 @@ namespace Insteon.Library
         public bool IsDimmable { get; set; }
 
         private Dictionary<string,AddressRecord> _aldb;
-        [DataMember]
         public Dictionary<string, AddressRecord> ALDB
         {
             get

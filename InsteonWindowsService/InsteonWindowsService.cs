@@ -33,6 +33,9 @@ namespace Insteon.WindowsService
         
         private InsteonHandler _handler;
 
+        private double _latitude;
+        private double _longitude;
+
         private InsteonWebService _insteonWebService;
         private Random _random;
         public InsteonWindowsService()
@@ -68,6 +71,14 @@ namespace Insteon.WindowsService
                 string serialPort = ConfigurationManager.AppSettings["SerialPort"];
                 if (!string.IsNullOrEmpty(serialPort))
                     _serialPort = serialPort;
+
+                string latString = ConfigurationManager.AppSettings["Latitude"];
+                if (!double.TryParse(latString, out _latitude))
+                    _latitude = 29.548;
+
+                string longitudeString = ConfigurationManager.AppSettings["Longitude"];
+                if (!double.TryParse(longitudeString, out _longitude))
+                    _longitude = -98.5342;
 
                 SetServiceState(State.SERVICE_START_PENDING);
 
@@ -170,25 +181,41 @@ namespace Insteon.WindowsService
 
                 if (null != coachLights)
                 {
+                    SolarTime solarTime = new SolarTime();
+                    TimeZoneInfo timezone = TimeZoneInfo.Local;
+                    double sunrise = solarTime.CalculateSunriseOrSunset(true, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
+                    double sunset = solarTime.CalculateSunriseOrSunset(false, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
+
+                    int sunriseHour = (int)Math.Floor(sunrise / 60);
+                    int sunriseMinute = (int)Math.Floor(sunrise - (60 * sunriseHour));
+                    int sunriseSeconds = (int)(60.0 * ((double)sunrise - Math.Floor(sunrise)));
+
+                    int sunsetHour = (int)Math.Floor(sunset / 60);
+                    int sunsetMinute = (int)Math.Floor(sunset - (60 * sunsetHour));
+                    int sunsetSecond = (int)(60.0 * ((double)sunset - Math.Floor(sunset)));
+
+                    TimeSpan sunriseTimeSpan = new TimeSpan(sunriseHour, sunriseMinute, sunriseSeconds);
+                    TimeSpan sunsetTimeSpan = new TimeSpan(sunsetHour, sunsetMinute, sunsetSecond);
+
                     if (coachLights.Status != 1)
                     {
-                        if (DateTime.Now.Hour >= 20 || DateTime.Now.Hour < 7)
+                        if (DateTime.Now.TimeOfDay >= sunsetTimeSpan || DateTime.Now.TimeOfDay < sunriseTimeSpan)
                         {
-                            _insteonWebService.FastOn("coachLights");
+                            _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x0F);
                             coachLights.Status = 1;
                             coachLights.LastOn = DateTime.Now;
-                            log.Info(string.Format("Turned coach lights on at {0}", DateTime.Now));
+                            log.Info(string.Format("Turned coach lights on at {0}.  Sunset Timespan: {1}, Sunset Decimal: {2}", DateTime.Now, sunsetTimeSpan.ToString(), sunset));
                             Thread.Sleep(500);
                         }
                     }
                     else
                     {
-                        if (DateTime.Now.Hour >= 7 && DateTime.Now.Hour < 20)
+                        if (DateTime.Now.TimeOfDay >= sunriseTimeSpan && DateTime.Now.TimeOfDay < sunsetTimeSpan)
                         {
-                            _insteonWebService.Off("coachLights");
+                            _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
                             coachLights.Status = 0;
                             coachLights.LastOff = DateTime.Now;
-                            log.Info(string.Format("Turned coach lights off at {0}", DateTime.Now));
+                            log.Info(string.Format("Turned coach lights off at {0}.  Sunrise Timespan: {1}, Sunrise Decimal: {2}", DateTime.Now, sunriseTimeSpan.ToString(), sunrise));
                             Thread.Sleep(500);
                         }
                     }

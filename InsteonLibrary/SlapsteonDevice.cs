@@ -23,5 +23,14 @@ namespace Insteon.Library
 
         [DataMember]
         public string Address { get; set; }
+
+        [DataMember]
+        public bool IsDimmable { get; set; }
+
+        [DataMember]
+        public bool IsPLM { get; set; }
+
+        [DataMember]
+        public bool IsFan { get; set; }
     }
 }

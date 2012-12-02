@@ -46,7 +46,13 @@ namespace Insteon.Library
          [WebGet(UriTemplate = "/{device}/Off/{rate}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
          void RampOff(string device, string rate);
 
+         [OperationContract]
+         [WebGet(UriTemplate = "/{device}/On2/{level}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+         void On2(string device, string level);
 
+        [OperationContract]
+        [WebGet(UriTemplate = "/Level1Alert" , ResponseFormat=WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void Level1Alert();
 
     }
 }

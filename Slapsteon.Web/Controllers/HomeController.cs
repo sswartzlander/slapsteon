@@ -37,6 +37,9 @@ namespace Slapsteon.Web.Controllers
                 device.Name = dev.Name;
                 device.LastOff = dev.LastOff;
                 device.LastOn = dev.LastOn;
+                device.IsFan = dev.IsFan;
+                device.IsPLM = dev.IsPLM;
+                device.IsDimmable = dev.IsDimmable;
                 deviceList.Add(device);
             }
 
@@ -54,6 +57,22 @@ namespace Slapsteon.Web.Controllers
         {
             SlapsteonFacade facade = new SlapsteonFacade();
             facade.On(device.Name);
+
+            return RedirectToAction("Index", "Home"); 
+        }
+
+        public ActionResult OnLevel(string deviceName, int? level)
+        {
+            SlapsteonFacade facade = new SlapsteonFacade();
+            facade.On(deviceName, level ?? 0);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        public ActionResult OnFan(string deviceName, int? level)
+        {
+            SlapsteonFacade facade = new SlapsteonFacade();
+            facade.On2(deviceName, level ?? 0);
 
             return RedirectToAction("Index", "Home"); 
         }

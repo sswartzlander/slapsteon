@@ -12,5 +12,8 @@ namespace Slapsteon.Web.Models
         public int Status { get; set; }
         public DateTime LastOn { get; set; }
         public DateTime LastOff { get; set; }
+        public bool IsFan { get; set; }
+        public bool IsPLM { get; set; }
+        public bool IsDimmable { get; set; }
     }
 }

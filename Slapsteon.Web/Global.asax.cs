@@ -21,7 +21,16 @@ namespace Slapsteon.Web
                 "{controller}/{action}/{id}", // URL with parameters
                 new { controller = "Home", action = "Index", id = UrlParameter.Optional } // Parameter defaults
             );
-
+            routes.MapRoute(
+                "OnLevel",
+                "{controller}/OnLevel/{deviceName}/{level}",
+                new { controller = "Home", action = "OnLevel" }
+                );
+            routes.MapRoute(
+                "OnFan",
+                "{controller}/OnFan/{deviceName}/{level}",
+                new { controller = "Home", action = "OnFan" }
+                );
         }
 
         protected void Application_Start()

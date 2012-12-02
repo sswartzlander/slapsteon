@@ -49,6 +49,28 @@ namespace Slapsteon.Web.Business
 
         }
 
+        public void On(string deviceName, int level)
+        {
+            WebRequest request = WebRequest.Create(string.Format("http://localhost/InsteonWebService/{0}/On/{1}", deviceName, level)) as WebRequest;
+            request.Method = "GET";
+            request.ContentType = "application/json";
+            request.ContentLength = 0;
+
+            WebResponse response = request.GetResponse();
+
+        }
+
+        public void On2(string deviceName, int level)
+        {
+            WebRequest request = WebRequest.Create(string.Format("http://localhost/InsteonWebService/{0}/On2/{1}", deviceName, level)) as WebRequest;
+            request.Method = "GET";
+            request.ContentType = "application/json";
+            request.ContentLength = 0;
+
+            WebResponse response = request.GetResponse();
+
+        }
+
         public void Off(string deviceName)
         {
             WebRequest request = WebRequest.Create(string.Format("http://localhost/InsteonWebService/{0}/Off", deviceName)) as WebRequest;

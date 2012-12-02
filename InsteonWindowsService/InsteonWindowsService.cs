@@ -89,6 +89,7 @@ namespace Insteon.WindowsService
                 _handler.GetStatusForAllDevices();
 
                 _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(_handler_InsteonTrafficDetected);
+                _handler.PartyDetected += new InsteonHandler.PartyHandler(_handler_PartyDetected);
 
 
                 Thread serviceStartThread = new Thread(delegate()
@@ -117,6 +118,11 @@ namespace Insteon.WindowsService
         void _handler_InsteonTrafficDetected(object sender, InsteonTrafficEventArgs e)
         {
             
+        }
+
+        void _handler_PartyDetected(object sender)
+        {
+            _insteonWebService.Party();
         }
 
         protected override void OnStop()

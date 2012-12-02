@@ -9,9 +9,26 @@ namespace Insteon.Library
     [DataContract]
     public class Device
     {
+        private LightOffTimer _timer;
+
         public Device()
         {
 
+        }
+
+        public void SetTimer(InsteonHandler handler)
+        {
+            if (!DefaultOffMinutes.HasValue)
+                return;
+
+            if (null != _timer)
+            {
+                _timer.Reset();
+                _timer = null;
+            }
+
+            _timer = new LightOffTimer(this, new TimeSpan(0, DefaultOffMinutes.Value, 0), handler);
+            _timer.Start();
         }
 
         private List<Device> _slaveDevices;
@@ -62,6 +79,11 @@ namespace Insteon.Library
         public bool IsPLM { get; set; }
         [DataMember]
         public bool IsDimmable { get; set; }
+
+        [DataMember]
+        public bool IsFan { get; set; }
+
+        public int? DefaultOffMinutes { get; set; }
 
         private Dictionary<string,AddressRecord> _aldb;
         public Dictionary<string, AddressRecord> ALDB

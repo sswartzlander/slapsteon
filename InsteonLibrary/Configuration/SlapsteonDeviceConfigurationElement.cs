@@ -60,6 +60,19 @@ namespace Insteon.Library.Configuration
             }
         }
 
+        [ConfigurationProperty("isFan", IsKey = false, IsRequired = false)]
+        public bool? IsFan
+        {
+            get
+            {
+                return this["isFan"] as bool?;
+            }
+            set
+            {
+                this["isFan"] = value;
+            }
+        }
+
         public override string GetKey()
         {
             return Address;
@@ -70,6 +83,13 @@ namespace Insteon.Library.Configuration
         {
             get { return this["slaveDevices"] as string; }
             set { this["slaveDevices"] = value; }
+        }
+
+        [ConfigurationProperty("defaultOffMinutes", IsKey=false, IsRequired=false)]
+        public int? DefaultOffMinutes
+        {
+            get { return this["defaultOffMinutes"] as int?; }
+            set { this["defaultOffMinutes"] = value; }
         }
 
     }

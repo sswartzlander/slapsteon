@@ -74,7 +74,6 @@
     <Compile Include="Business\SlapsteonDevice.cs" />
     <Compile Include="Business\SlapsteonFacade.cs" />
     <Compile Include="Controllers\HomeController.cs" />
-    <Compile Include="Controllers\LightsController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -89,7 +88,6 @@
     <Content Include="Content\Site.css" />
     <Content Include="Views\Home\Index.aspx" />
     <Content Include="Views\Home\List.ascx" />
-    <Content Include="Views\Lights\Index.aspx" />
     <Content Include="Views\Web.config" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>

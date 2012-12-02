@@ -131,6 +131,22 @@ namespace Insteon.Library
             }
         }
 
+        public void Level1Alert()
+        {
+            try
+            {
+                FastOn("officeOutlet");
+
+                Thread.Sleep(2000);
+                
+                RampOff("officeFan", "64");
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Failed while playing Level1Alert.  Message: {0}\nStacktrace: {1}", ex.Message, ex.StackTrace);
+            }
+        }
+
         public Device GetDevice(string name)
         {
             Device device = null;
@@ -161,7 +177,10 @@ namespace Insteon.Library
                     LastOff = device.LastOff,
                     LastOn = device.LastOn,
                     Name = device.Name,
-                    Status = device.Status.ToString()
+                    Status = device.Status.ToString(),
+                    IsPLM = device.IsPLM,
+                    IsDimmable = device.IsDimmable,
+                    IsFan = device.IsFan
                 };
 
                 slapsteonDevices.Add(slapsteonDevice);
@@ -281,6 +300,57 @@ namespace Insteon.Library
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampRateByte, 0x07);
 
+        }
+
+        public void On2(string device, string level)
+        {
+            int levelValue;
+            if (!int.TryParse(level, out levelValue))
+            {
+                log.Warn("Invalid level value: " + level);
+                return;
+            }
+
+            Device dev = GetDevice(device);
+
+            if (null == dev || !dev.IsFan)
+                return;
+
+            // not sure why the easier computation converts 100 to 0xFE
+            byte byteLevel = (byte)(levelValue * 255 / 100);
+
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x1F, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+        }
+
+        public void Party()
+        {
+            try
+            {
+                ProcessStartInfo plinkStartInfo = new ProcessStartInfo("C:\\plink.exe");
+                plinkStartInfo.Arguments = "steve@192.168.222.223 -P 59727 -i C:\\putty_privkey.ppk PartyRock";
+                plinkStartInfo.RedirectStandardOutput = true;
+                plinkStartInfo.RedirectStandardInput = true;
+                //plinkStartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Maximized;
+                plinkStartInfo.UseShellExecute = false;
+                plinkStartInfo.CreateNoWindow = true;
+
+                Process proc = Process.Start(plinkStartInfo);
+
+                // outputReader = proc.StandardOutput;
+
+                proc.WaitForExit(5000);
+
+                //string s = outputReader.ReadToEnd();
+                log.Info("Completed playing alarm sound.");
+                //log.Info(s);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error(string.Format("Error occurred playing Alarm: {0}", ex.Message));
+                log.Error(ex.StackTrace);
+            }
         }
     }
 }

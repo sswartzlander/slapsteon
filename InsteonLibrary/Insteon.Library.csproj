@@ -65,6 +65,7 @@
     <Compile Include="InsteonTrafficEventArgs.cs" />
     <Compile Include="InsteonWebService.cs" />
     <Compile Include="KeypadLinc.cs" />
+    <Compile Include="LightOffTimer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SlapsteonDevice.cs" />
     <Compile Include="SwitchLinc.cs" />

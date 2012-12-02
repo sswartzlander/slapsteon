@@ -14,8 +14,9 @@ namespace Insteon.Library
     {
 
         public delegate void InsteonTrafficHandler(object sender, InsteonTrafficEventArgs e);
-
+        public delegate void PartyHandler(object sender);
         public event InsteonTrafficHandler InsteonTrafficDetected;
+        public event PartyHandler PartyDetected;
 
         private SerialPort _plm;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
@@ -59,7 +60,8 @@ namespace Insteon.Library
 
                 dev.IsPLM = element.IsPLM ?? false;
                 dev.IsDimmable = element.IsDimmable ?? false;
-
+                dev.IsFan = element.IsFan ?? false;
+                dev.DefaultOffMinutes = element.DefaultOffMinutes;
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
 
@@ -321,6 +323,12 @@ namespace Insteon.Library
                         sourceDevice.LastOn = DateTime.Now;
                     }
 
+                    if (sourceDevice.DefaultOffMinutes.HasValue)
+                    {
+                        log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
+                        sourceDevice.SetTimer(this);
+                    }
+
                     commandType = "FastOn";
                     break;
                 case Constants.STD_COMMAND_GET_OP_FLAGS:
@@ -349,6 +357,13 @@ namespace Insteon.Library
                         sourceDevice.LastOn = DateTime.Now;
                     }
 
+                    if (sourceDevice.DefaultOffMinutes.HasValue)
+                    {
+                        log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
+                        sourceDevice.SetTimer(this);
+                    }
+
+
                     commandType = "LightRampOn";
                     break;
 
@@ -371,6 +386,21 @@ namespace Insteon.Library
                         sourceDevice.Status = 100;
                         sourceDevice.LastOn = DateTime.Now;
                     }
+
+                    if (sourceDevice.DefaultOffMinutes.HasValue)
+                    {
+                        log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
+                        sourceDevice.SetTimer(this);
+                    }
+
+                    if (sourceDevice.Name == "zone1IOLinc")
+                    {
+                        if (null != PartyDetected)
+                        {
+                            PartyDetected(this);
+                        }
+                    }
+
                     commandType = "CommandOn";
                     break;
                 case Constants.STD_COMMAND_REMOTE_SET_BUTTON_TAP:
@@ -455,12 +485,19 @@ namespace Insteon.Library
                 return;
             }          
             
-            if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
+            if (message[16] == (byte)AddressEntryType.Last)
             {
                 // last record detected...signal anything waiting for all addresses
+                log.InfoFormat("Exiting ALDB Processing on byte {0}", message[16].ToString("X"));
 
                 _aldbEventWaitHandle.Set();
 
+                return;
+            }
+
+            if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
+            {
+                log.DebugFormat("Skipping insertion of address record with type {0}.", message[16].ToString("X"));
                 return;
             }
 
@@ -1012,7 +1049,7 @@ namespace Insteon.Library
                 GetAddressRecords(_allDevices[key].Address);
 
                 log.Info("Waiting on ALDB Event Handle");
-                _aldbEventWaitHandle.WaitOne(10000);
+                _aldbEventWaitHandle.WaitOne(30000);
                 log.Info("Finished Waiting on ALDB entry.");
 
                 log.Info(string.Format("Found {0} ALDB entries for device: {1}", _allDevices[key].ALDB.Count, _allDevices[key].Name));

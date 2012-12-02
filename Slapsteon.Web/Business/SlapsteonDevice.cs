@@ -20,5 +20,8 @@ namespace Slapsteon.Web.Business
         //public string LastOn { get; set; }
         //public string LastOff { get; set; }
         public string Status { get; set; }
+        public bool IsPLM { get; set; }
+        public bool IsDimmable { get; set; }
+        public bool IsFan { get; set; }
     }
 }

@@ -92,5 +92,11 @@ namespace Insteon.Library.Configuration
             set { this["defaultOffMinutes"] = value; }
         }
 
+        [ConfigurationProperty("isKPL", IsKey=false, IsRequired=false)]
+        public bool? IsKPL
+        {
+            get { return this["isKPL"] as bool?; }
+            set { this["isKPL"] = value; }
+        }
     }
 }

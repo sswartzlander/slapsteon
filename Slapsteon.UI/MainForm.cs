@@ -10,6 +10,7 @@ using System.IO.Ports;
 using Insteon.Library;
 using System.Threading;
 using log4net;
+using System.Configuration;
 
 namespace Slapsteon.UI
 {
@@ -30,15 +31,13 @@ namespace Slapsteon.UI
             log4net.Config.XmlConfigurator.Configure();
 
             log.Info("Starting application.");
-            
+
+            string comPortString = ConfigurationManager.AppSettings["comPort"];
+            if (!string.IsNullOrEmpty(comPortString))
+                _serialPort = comPortString;
 
             InitializeComponent();
             _handler = new InsteonHandler(_serialPort);
-            _handler.EnableMonitorMode();
-            Thread.Sleep(500);
-
-            _handler.GetALDBForAllDevices();
-            _handler.GetStatusForAllDevices();
 
             foreach (string key in _handler.AllDevices.Keys)
             {
@@ -185,9 +184,9 @@ namespace Slapsteon.UI
         {
             try
             {
-                ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
-                    _handler.AllDevices[_selectedDevice.Address.ToString()].ALDB.Values.ToList());
-                viewAddressTable.ShowDialog();
+                //ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
+                //    _handler.AllDevices[_selectedDevice.Address.ToString()].ALDB.Values.ToList());
+                //viewAddressTable.ShowDialog();
 
             }
             catch (Exception ex)

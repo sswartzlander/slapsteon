@@ -83,10 +83,6 @@ namespace Insteon.WindowsService
                 SetServiceState(State.SERVICE_START_PENDING);
 
                 _handler = new InsteonHandler(serialPort);
-                _handler.EnableMonitorMode();
-                Thread.Sleep(500);
-                _handler.GetALDBForAllDevices();
-                _handler.GetStatusForAllDevices();
 
                 _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(_handler_InsteonTrafficDetected);
                 _handler.PartyDetected += new InsteonHandler.PartyHandler(_handler_PartyDetected);

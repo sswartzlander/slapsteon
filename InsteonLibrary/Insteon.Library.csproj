@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="AddressEntryType.cs" />
     <Compile Include="AddressRecord.cs" />
+    <Compile Include="ALDBLibrary.cs" />
     <Compile Include="Configuration\SlapsteonConfigurationElement.cs" />
     <Compile Include="Configuration\SlapsteonConfigurationElementCollection.cs" />
     <Compile Include="Configuration\SlapsteonConfigurationSection.cs" />
@@ -56,6 +57,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Device.cs" />
     <Compile Include="DeviceAddress.cs" />
+    <Compile Include="DeviceALDB.cs" />
     <Compile Include="DeviceStatus.cs" />
     <Compile Include="FlagsAck.cs" />
     <Compile Include="InsteonExtendedCommand.cs" />

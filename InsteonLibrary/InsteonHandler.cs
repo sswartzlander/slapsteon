@@ -7,6 +7,8 @@ using System.IO.Ports;
 using System.Threading;
 using Insteon.Library.Configuration;
 using System.Configuration;
+using System.Xml.Serialization;
+using System.IO;
 
 namespace Insteon.Library
 {
@@ -22,14 +24,15 @@ namespace Insteon.Library
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private Thread _monitorModeThread;
 
+        private bool _gettingExtendedStatus = false;
         private bool _gettingStatus = false;
         private object _statusSyncObject = new object();
 
         private EventWaitHandle _aldbEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
         private EventWaitHandle _statusEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-
+        private EventWaitHandle _extendedGetWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
         private Dictionary<string,Device> _allDevices = new Dictionary<string,Device>();
-
+        private ALDBLibrary _aldbLibrary = new ALDBLibrary();
         public Dictionary<string, Device> AllDevices
         {
             get
@@ -43,6 +46,23 @@ namespace Insteon.Library
             // read the configuration file
             SlapsteonConfigurationSection slapsteonConfiguration = 
                 ConfigurationManager.GetSection("slapsteon") as SlapsteonConfigurationSection;
+
+            try
+            {
+                _plm = new SerialPort(comPort, 19200, Parity.None, 8, StopBits.One);
+                log.Info("Opening serial port " + comPort);
+                _plm.Open();
+                log.Info("Successfully connected to PLM.");
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error opening serial port", ex);
+                throw ex;
+            }
+            _plm.DataReceived += new SerialDataReceivedEventHandler(_plm_DataReceived);
+            Thread.Sleep(500);
+            this.SetMonitorMode();
 
             if (null == slapsteonConfiguration)
                 throw new ConfigurationErrorsException("The configuration needs a <slapsteon> section.");
@@ -62,6 +82,8 @@ namespace Insteon.Library
                 dev.IsDimmable = element.IsDimmable ?? false;
                 dev.IsFan = element.IsFan ?? false;
                 dev.DefaultOffMinutes = element.DefaultOffMinutes;
+                dev.IsKPL = element.IsKPL ?? false;
+
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
 
@@ -94,19 +116,16 @@ namespace Insteon.Library
                 log.Debug(string.Format("added {0} slave device(s) for device {1}", slaveDevices.Count, element.Name));
             }
 
-            try
-            {
-                _plm = new SerialPort(comPort, 19200, Parity.None, 8, StopBits.One);
-                log.Info("Opening serial port " + comPort);
-                _plm.Open();
-                log.Info("Successfully connected to PLM.");
+            // deserialize the DeviceALDB
+            DeserializeStoredDeviceALDB();
 
-            }
-            catch (Exception ex)
-            {
-                log.Error("Error opening serial port", ex);
-                throw ex;
-            }
+
+
+            GetStatusForAllDevices();
+            Thread.Sleep(300);
+            GetALDBForAllDevices();
+
+            SerializeDeviceALDB();
         }
 
         private byte[] _lastSentCommand;
@@ -426,14 +445,57 @@ namespace Insteon.Library
             {
                 foreach (string i in _allDevices.Keys)
                 {
-                    foreach (string j in _allDevices[i].ALDB.Keys)
+                    DeviceALDB devALDB = _aldbLibrary.Devices.FirstOrDefault(d => d.DeviceAddress == _allDevices[i].Address.ToString());
+                    if (null == devALDB)
+                        continue;
+
+                    foreach (ALDBRecord record in devALDB.ALDBRecords)
                     {
-                        if (_allDevices[i].ALDB[j].Type == AddressEntryType.Responder &&
-                            _allDevices[i].ALDB[j].Address.ToString() == fromAddress.ToString())
+                        // record not active
+                        if ((record.Flags & 0x80) == 0)
+                            continue;
+
+                        if ((record.Flags & 0x40) == 0 && // responder
+                            record.AddressToString() == fromAddress.ToString())
                         {
-                            if (_allDevices[i].ALDB[j].GroupNumber == toAddress.Byte3)
+                            if (record.Group == toAddress.Byte3)
                             {
-                                log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, _allDevices[i].ALDB[j].GroupNumber, _allDevices[i].ALDB[j].LocalData1.ToString("X"), _allDevices[i].ALDB[j].LocalData2.ToString("X"), _allDevices[i].ALDB[j].LocalData3.ToString("X")));
+                                log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, record.Group, record.LocalData1.ToString("X"), record.LocalData2.ToString("X"), record.LocalData3.ToString("X")));
+
+                                if (_allDevices[i].IsKPL)
+                                {
+                                    // update KPL button for the action.. mainly concerned with bits --XXXX--
+                                    byte flipMask = 0xFF;
+                                    switch (record.LocalData3)
+                                    {
+                                        case 3:
+                                            flipMask = 0x04;
+                                            break;
+                                        case 4:
+                                            flipMask = 0x08;
+                                            break;
+                                        case 5:
+                                            flipMask = 0x10;
+                                            break;
+                                        case 6:
+                                            flipMask = 0x20;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
+                                    if (command1 == Constants.STD_COMMAND_ON || command1== Constants.STD_COMMAND_FAST_ON)
+                                    {
+                                        _allDevices[i].KPLButtonMask |= flipMask;
+                                    }
+                                    else if (command1 == Constants.STD_COMMAND_OFF || command1 == Constants.STD_COMMAND_FAST_OFF)
+                                    {
+                                        _allDevices[i].KPLButtonMask &= (byte)(0xFF ^ flipMask);
+                                    }
+                                    log.InfoFormat("Updated Button Mask to {0} for device {1}", _allDevices[i].KPLButtonMask.ToString("X"), _allDevices[i].Name);
+                                }
+
+
                             }
                         }
                     }
@@ -463,80 +525,172 @@ namespace Insteon.Library
                 case Constants.EXT_COMMAND_READ_WRITE_ALDB:
                     ProcessALDBResponse(message);
                     return;
+                case Constants.EXT_COMMAND_EXTENDED_GET_SET:
+                    ProcessExtendedGetResponse(message);
+                    return;
                 default:
                     break;
             }
 
         }
 
+        private void ProcessExtendedGetResponse(byte[] message)
+        {
+
+            try
+            {
+                byte deviceAddress1 = message[2];
+                byte deviceAddress2 = message[3];
+                byte deviceAddress3 = message[4];
+
+                DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
+                Device device = _allDevices[deviceAddress.ToString()];
+
+                // for now just get the button mask...
+                device.KPLButtonMask = message[21];
+
+                if (_gettingExtendedStatus)
+                    _extendedGetWaitHandle.Set();
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error processing Extended Get Response");
+            }
+
+        }
+
         private void ProcessALDBResponse(byte[] message)
         {
-            byte deviceAddress1 = message[2];
-            byte deviceAddress2 = message[3];
-            byte deviceAddress3 = message[4];
-
-            DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
-
-            Device device = _allDevices[deviceAddress.ToString()];
-
-            if (null == device)
+            try
             {
-                log.Warn(string.Format("Could not find device with address {0} in all devices.", deviceAddress.ToString()));
-                return;
-            }          
-            
-            if (message[16] == (byte)AddressEntryType.Last)
-            {
-                // last record detected...signal anything waiting for all addresses
-                log.InfoFormat("Exiting ALDB Processing on byte {0}", message[16].ToString("X"));
+                byte deviceAddress1 = message[2];
+                byte deviceAddress2 = message[3];
+                byte deviceAddress3 = message[4];
 
-                _aldbEventWaitHandle.Set();
+                DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
+                Device device = _allDevices[deviceAddress.ToString()];
+                
+               
+                DeviceALDB deviceALDB = null;
+                // record isnt in out ALDB Library yet
+                if (!_aldbLibrary.Devices.Exists(a => a.DeviceAddress == deviceAddress.ToString()))
+                {
+                    deviceALDB = new DeviceALDB();
+                    deviceALDB.DeviceAddress = deviceAddress.ToString();
+                    deviceALDB.Delta = device.Delta;
 
-                return;
+                    _aldbLibrary.Devices.Add(deviceALDB);
+                }
+                else
+                    deviceALDB = _aldbLibrary.Devices.First(a => a.DeviceAddress == deviceAddress.ToString());
+
+
+                // redundant...we should be doing this before we even pull the ALDB
+                //if (device.Delta != device.DeviceALDB.Delta)
+                //    log.DebugFormat("Device Delta {0} did not match the stored version {1}", device.Delta.ToString("X"), device.DeviceALDB.Delta.ToString("X"));
+
+
+                ALDBRecord record = new ALDBRecord();
+                record.AddressMSB = message[13];
+                record.AddressLSB = message[14];
+                record.Flags = message[16];
+                record.Group = message[17];
+                record.Address1 = message[18];
+                record.Address2 = message[19];
+                record.Address3 = message[20];
+                record.LocalData1 = message[21];
+                record.LocalData2 = message[22];
+                record.LocalData3 = message[23];
+
+                if ((record.Flags == 0x00) && ((record.Address1 == 0x00) && (record.Address2 == 0x00) && (record.Address3 == 0x00)))
+                {
+                    log.Info("Reached last address record.");
+                    _aldbEventWaitHandle.Set();
+
+                    return;
+                }
+                deviceALDB.ALDBRecords.Add(record);
             }
-
-            if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
+            catch (Exception ex)
             {
-                log.DebugFormat("Skipping insertion of address record with type {0}.", message[16].ToString("X"));
-                return;
-            }
-
-            AddressEntryType type = (AddressEntryType)message[16];
-
-            byte groupNumber = message[17];
-            byte address1 = message[18];
-            byte address2 = message[19];
-            byte address3 = message[20];
-
-            byte localData1 = message[21];
-            byte localData2 = message[22];
-            byte localData3 = message[23];
-
-            byte aldbAddress1 = message[14];
-            byte aldbAddress2 = message[15];
-
-            DeviceAddress targetDeviceAddress = new DeviceAddress(address1, address2, address3);
-
-            string targetDeviceName = _allDevices[targetDeviceAddress.ToString()].Name;
-
-            string aldbOffset = string.Format("{0}{1}",aldbAddress1.ToString("X"),aldbAddress2.ToString("X"));
-
-            AddressRecord record = new AddressRecord(type, groupNumber,
-                targetDeviceAddress,
-                localData1, localData2, localData3);
-            record.AddressOffset = aldbOffset;
-            record.AddressDeviceName = targetDeviceName;
-       
-
-            if (device.ALDB.ContainsKey(aldbOffset))
-            {
-                device.ALDB[aldbOffset] = record;
-            }
-            else
-            {
-                device.ALDB.Add(aldbOffset, record);
+                log.ErrorFormat("Error processing ALDB Response");
             }
         }
+
+        //private void ProcessALDBResponse(byte[] message)
+        //{
+        //    // new logic for the future
+        //    ProcessALDBResponse2(message);
+
+        //    byte deviceAddress1 = message[2];
+        //    byte deviceAddress2 = message[3];
+        //    byte deviceAddress3 = message[4];
+
+        //    DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
+            
+        //    Device device = _allDevices[deviceAddress.ToString()];
+
+        //    if (null == device)
+        //    {
+        //        log.Warn(string.Format("Could not find device with address {0} in all devices.", deviceAddress.ToString()));
+        //        return;
+        //    }          
+            
+        //    if (message[16] == (byte)AddressEntryType.Last)
+        //    {
+        //        // last record detected...signal anything waiting for all addresses
+        //        log.InfoFormat("Exiting ALDB Processing on byte {0}", message[16].ToString("X"));
+
+        //        _aldbEventWaitHandle.Set();
+
+        //        return;
+        //    }
+
+        //    if (message[16] != (byte)AddressEntryType.Controller && message[16] != (byte)AddressEntryType.Responder)
+        //    {
+        //        log.DebugFormat("Skipping insertion of address record with type {0}.", message[16].ToString("X"));
+        //        return;
+        //    }
+
+        //    AddressEntryType type = (AddressEntryType)message[16];
+
+        //    byte groupNumber = message[17];
+        //    byte address1 = message[18];
+        //    byte address2 = message[19];
+        //    byte address3 = message[20];
+
+        //    byte localData1 = message[21];
+        //    byte localData2 = message[22];
+        //    byte localData3 = message[23];
+
+        //    byte aldbAddress1 = message[14];
+        //    byte aldbAddress2 = message[15];
+
+        //    DeviceAddress targetDeviceAddress = new DeviceAddress(address1, address2, address3);
+
+        //    string targetDeviceName = targetDeviceAddress.ToString();
+
+        //    if (_allDevices.ContainsKey(targetDeviceAddress.ToString()))
+        //        targetDeviceName = _allDevices[targetDeviceAddress.ToString()].Name;
+
+        //    string aldbOffset = string.Format("{0}{1}",aldbAddress1.ToString("X"),aldbAddress2.ToString("X"));
+
+        //    AddressRecord record = new AddressRecord(type, groupNumber,
+        //        targetDeviceAddress,
+        //        localData1, localData2, localData3);
+        //    record.AddressOffset = aldbOffset;
+        //    record.AddressDeviceName = targetDeviceName;
+       
+
+        //    //if (device.ALDB.ContainsKey(aldbOffset))
+        //    //{
+        //    //    device.ALDB[aldbOffset] = record;
+        //    //}
+        //    //else
+        //    //{
+        //    //    device.ALDB.Add(aldbOffset, record);
+        //    //}
+        //}
 
         private bool CompareToLastSentCommand(byte[] command)
         {
@@ -737,66 +891,6 @@ namespace Insteon.Library
             return succeeded;
         }
 
-        public void EnableMonitorMode()
-        {
-            _monitorModeThread = new Thread(delegate()
-            {
-                RunMonitorMode();
-            });
-
-            _monitorModeThread.Start();
-        }
-
-        private void RunMonitorMode()
-        {
-            _plm.DataReceived += new SerialDataReceivedEventHandler(_plm_DataReceived);
-
-            this.SetMonitorMode();
-
-            //byte[] statusCommand = new byte[8]; // (, , 
-            //statusCommand[0] = 0x02;
-            //statusCommand[1] = 0x62;
-            //statusCommand[2] = 0x19;
-            //statusCommand[3] = 0x2A;
-            //statusCommand[4] = 0x4D;
-            //statusCommand[5] = 0x0F;
-            //statusCommand[6] = 0x19;
-            //statusCommand[7] = 0x00;
-
-            //_plm.Write(statusCommand, 0, 8);
-
-            //Thread.Sleep(250);
-
-            //handler.SetLastCommand(statusCommand);
-            int numberOfBytesToRead;
-            byte[] bytesRead = null;
-            string byteString = null;
-
-           
-
-            return;
-
-            //while (true)
-            //{
-            //    // lock here so we can let specific operations prevent this from stealing output
-            //    lock (this)
-            //    {
-            //        numberOfBytesToRead = _plm.BytesToRead;
-
-            //        if (numberOfBytesToRead > 0)
-            //        {
-            //            bytesRead = new byte[numberOfBytesToRead];
-            //            _plm.Read(bytesRead, 0, numberOfBytesToRead);
-            //            byteString = BitConverter.ToString(bytesRead);
-            //            Console.WriteLine(DateTime.Now.ToString() + ": " + byteString);
-            //            log.Info(byteString);
-
-            //            this.ParseCommand(bytesRead);
-            //        }
-            //    }
-            //    Thread.Sleep(1000);
-            //}
-        }
         private byte[] _buffer = new byte[1024];
         private int _bufferOffset = 0;
 
@@ -1044,15 +1138,43 @@ namespace Insteon.Library
                 // so do not get it in this fashion
                 if (_allDevices[key].IsPLM)
                     continue;
+
+                DeviceALDB targetALDB = _aldbLibrary.Devices.FirstOrDefault(a => a.DeviceAddress == key);
+
+                if (null != targetALDB && targetALDB.Delta == _allDevices[key].Delta && targetALDB.Delta != 0x00)
+                {
+                    log.DebugFormat("Device {0}'s Delta matched the stored delta ({1})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
+                    continue;
+                }
+                else if (null != targetALDB)
+                {
+                    log.DebugFormat("Device {0}'s Delta ({1}) did not match the stored delta ({2})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"), targetALDB.Delta.ToString("X"));
+                    targetALDB.Delta = _allDevices[key].Delta;
+                }
+                else
+                {
+                    log.DebugFormat("Device {0} was not in the ALDB Library.  Added with Delta {1}", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
+                    targetALDB = new DeviceALDB();
+                    targetALDB.Delta = _allDevices[key].Delta;
+                    targetALDB.DeviceAddress = _allDevices[key].AddressString;
+
+                    _aldbLibrary.Devices.Add(targetALDB);
+                }
+
                 log.Info(string.Format("Getting ALDB records for {0}", _allDevices[key].Name));
+
+                // clear out the existing data from the dictionary so it doesn't get duplicated
+                targetALDB.ALDBRecords.Clear();
 
                 GetAddressRecords(_allDevices[key].Address);
 
                 log.Info("Waiting on ALDB Event Handle");
-                _aldbEventWaitHandle.WaitOne(30000);
+                // todo: make a better way of detecting a timeout..as my database sizes grow i keep incrementing
+                // this timeout to prevent quitting before we're done
+                _aldbEventWaitHandle.WaitOne(120000);
                 log.Info("Finished Waiting on ALDB entry.");
 
-                log.Info(string.Format("Found {0} ALDB entries for device: {1}", _allDevices[key].ALDB.Count, _allDevices[key].Name));
+                log.Info(string.Format("Found {0} ALDB entries for device: {1}", targetALDB.ALDBRecords.Count, _allDevices[key].Name));
 
             }
         }
@@ -1072,6 +1194,54 @@ namespace Insteon.Library
                 log.Info(string.Format("Status for device: {0} was {1}", _allDevices[key].Name, (null != status ? status.OnLevel : 0m)));
 
                 _allDevices[key].Status = (null != status ? status.OnLevel : 0m);
+
+                Thread.Sleep(300);
+
+                if (_allDevices[key].IsKPL)
+                {
+                    log.InfoFormat("Getting KPL Button Mask for device {0}", _allDevices[key].Name);
+                    GetKPLInformation(_allDevices[key].Address);
+                    log.InfoFormat("Returned from  Get KPL Information, Button Mask: " + _allDevices[key].KPLButtonMask.ToString("X"));
+                    Thread.Sleep(300);
+                }
+            }
+        }
+
+        public void GetKPLInformation(DeviceAddress deviceAddress)
+        {
+            byte[] command = new byte[22];
+            try
+            {
+                // send a get status command
+                command[0] = 0x02;
+                command[1] = 0x62;
+                command[2] = deviceAddress.Byte1;
+                command[3] = deviceAddress.Byte2;
+                command[4] = deviceAddress.Byte3;
+                command[5] = 0x1F;
+                command[6] = Constants.EXT_COMMAND_EXTENDED_GET_SET;
+                command[7] = 0x00;
+                command[8] = 0x01;
+
+                _plm.Write(command, 0, 22);
+
+                _lastSentCommand = command;
+
+                _gettingExtendedStatus = true;
+
+                _extendedGetWaitHandle.Reset();
+                log.Info("Calling WaitOne on ExtendedGetWaitHandle");
+                _extendedGetWaitHandle.WaitOne(5000);
+                log.Info("ExtendedGetWaitHandle finished");
+
+
+                _gettingExtendedStatus = false;
+            }
+            catch (Exception ex)
+            {
+                log.Error(string.Format("Error getting KPL Information for device: {0}", deviceAddress.ToString()));
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
         }
 
@@ -1095,6 +1265,57 @@ namespace Insteon.Library
             retVal = (byte)Int32.Parse(trimmed, System.Globalization.NumberStyles.HexNumber);
 
             return retVal;
+        }
+
+
+        private void SerializeDeviceALDB()
+        {
+            TextWriter tw = null;
+            try
+            {
+                XmlSerializer xmlSerializer = new XmlSerializer(_aldbLibrary.GetType());
+                tw = new StreamWriter("DeviceALDB.xml");
+                xmlSerializer.Serialize(tw, _aldbLibrary);
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error serializing Device ALDB: {0},\n{1}", ex.Message, ex.StackTrace);
+            }
+            finally
+            {
+                if (null != tw)
+                {
+                    tw.Close();
+                    tw.Dispose();
+                }
+            }
+        }
+
+        private void DeserializeStoredDeviceALDB()
+        {
+            TextReader tr = null;
+            try
+            {
+                XmlSerializer xmlSerializer = new XmlSerializer(typeof(ALDBLibrary));
+
+                if (!File.Exists("DeviceALDB.xml"))
+                    return;
+
+                tr = new StreamReader("DeviceALDB.xml");
+                _aldbLibrary = (ALDBLibrary)xmlSerializer.Deserialize(tr);
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error deserializing Device ALDB: {0},\n{1}", ex.Message, ex.StackTrace);
+            }
+            finally
+            {
+                if (null != tr)
+                {
+                    tr.Close();
+                    tr.Dispose();
+                }
+            }
         }
     }
 

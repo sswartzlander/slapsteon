@@ -65,12 +65,6 @@ namespace Insteon.Library
         public decimal Status { get; set; }
 
         public byte Delta { get; set; }
-        [DataMember]
-        public string DeltaString
-        {
-            get { return Delta.ToString("X"); }
-            set { ;}
-        }
 
         [DataMember]
         public string Name { get; set; }
@@ -84,18 +78,6 @@ namespace Insteon.Library
         public bool IsFan { get; set; }
 
         public int? DefaultOffMinutes { get; set; }
-
-        private Dictionary<string,AddressRecord> _aldb;
-        public Dictionary<string, AddressRecord> ALDB
-        {
-            get
-            {
-                if (null == _aldb)
-                    _aldb = new Dictionary<string,AddressRecord>();
-                return _aldb;
-            }
-            set { _aldb = value; }
-        }
 
         [DataMember]
         public string AddressString
@@ -119,14 +101,7 @@ namespace Insteon.Library
             }
         }
 
-        //public bool OkayToTurnOn()
-        //{
-        //    if (-1 == Status) return true;
-
-        //    if (DateTime.Now.Subtract(LastOn).TotalSeconds < 60)
-        //        return false;
-
-        //    return true;
-        //}
+        public byte KPLButtonMask { get; set; }
+        public bool IsKPL { get; set; }
     }
 }

@@ -7,7 +7,15 @@ using System.Runtime.Serialization;
 namespace Insteon.Library
 {
     [DataContract]
-    public class Device
+    [KnownType(typeof(FanDevice))]
+    [KnownType(typeof(DimmerDevice))]
+    [KnownType(typeof(RelayDevice))]
+    [KnownType(typeof(MultiButtonDimmerDevice))]
+    [KnownType(typeof(MultiButtonRelayDevice))]
+    [KnownType(typeof(PLMDevice))]
+    [KnownType(typeof(SensorDevice))]
+    [KnownType(typeof(IODevice))]
+    public abstract class Device
     {
         private LightOffTimer _timer;
 
@@ -69,14 +77,6 @@ namespace Insteon.Library
         [DataMember]
         public string Name { get; set; }
 
-        [DataMember]
-        public bool IsPLM { get; set; }
-        [DataMember]
-        public bool IsDimmable { get; set; }
-
-        [DataMember]
-        public bool IsFan { get; set; }
-
         public int? DefaultOffMinutes { get; set; }
 
         [DataMember]
@@ -100,10 +100,5 @@ namespace Insteon.Library
                 _slaveDevices = value;
             }
         }
-
-        public byte KPLButtonMask { get; set; }
-        public bool IsKPL { get; set; }
-
-        public bool IsBatteryDevice { get; set; }
     }
 }

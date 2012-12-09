@@ -17,16 +17,6 @@ namespace Insteon.Library
     {
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private readonly string _serialPort = "COM4";
-        private static DeviceAddress _gameroomDimmer = new DeviceAddress(0x1B, 0xBC, 0xC0);
-        private static DeviceAddress _livingroomDimmer = new DeviceAddress(0x1B, 0xBE, 0xCC);
-        private static DeviceAddress _mbrDimmer = new DeviceAddress(0x1B, 0xB0, 0xB9);
-        private static DeviceAddress _MBRMulti = new DeviceAddress(0x19, 0x2B, 0xD4);
-        private static DeviceAddress _kitchenMultiSolo = new DeviceAddress(0x19, 0x2B, 0x89);
-        private static DeviceAddress _kitchenMulti = new DeviceAddress(0x19, 0x2A, 0x4D);
-        private static DeviceAddress _breakfastDimmer = new DeviceAddress(0x1B, 0xBF, 0x6E);
-        private static DeviceAddress _plmAddress = new DeviceAddress(0x19, 0x77, 0x51);
-        private static DeviceAddress _coachLights = new DeviceAddress(0x17, 0xF3, 0x23);
-        private static DeviceAddress _frontDoorHigh = new DeviceAddress(0x19, 0x2B, 0x83);
 
         private static readonly Guid _x = new Guid("6923dddf-77f6-4605-8e77-246187c49646");
         private static readonly Guid _y = new Guid("78929c13-d859-4b85-8b4d-10032084e4f2");
@@ -178,15 +168,20 @@ namespace Insteon.Library
                     LastOn = device.LastOn,
                     Name = device.Name,
                     Status = device.Status.ToString(),
-                    IsPLM = device.IsPLM,
-                    IsDimmable = device.IsDimmable,
-                    IsFan = device.IsFan
+                    IsPLM = device is PLMDevice,
+                    IsDimmable = device is DimmerDevice,
+                    IsFan = device is FanDevice
                 };
 
                 slapsteonDevices.Add(slapsteonDevice);
             }
 
             return slapsteonDevices.ToArray();
+        }
+
+        public Device[] GetDevices2()
+        {
+            return _handler.AllDevices.Values.ToArray();
         }
 
         public void FastOn(string device)
@@ -316,7 +311,7 @@ namespace Insteon.Library
 
             Device dev = GetDevice(device);
 
-            if (null == dev || !dev.IsFan)
+            if (null == dev || !(dev is FanDevice))
                 return;
 
             // not sure why the easier computation converts 100 to 0xFE

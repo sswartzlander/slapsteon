@@ -106,5 +106,12 @@ namespace Insteon.Library.Configuration
             set { this["isBatteryDevice"] = value; }
 
         }
+
+        [ConfigurationProperty("isIODevice", IsKey = false, IsRequired = false)]
+        public bool? IsIODevice
+        {
+            get { return this["isIODevice"] as bool?; }
+            set { this["isIODevice"] = value; }
+        }
     }
 }

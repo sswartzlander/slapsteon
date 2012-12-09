@@ -54,5 +54,8 @@ namespace Insteon.Library
         [WebGet(UriTemplate = "/Level1Alert" , ResponseFormat=WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
         void Level1Alert();
 
+        [OperationContract]
+        [WebGet(UriTemplate = "/GetDevices2", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        Device[] GetDevices2();
     }
 }

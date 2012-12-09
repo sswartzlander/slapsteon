@@ -455,7 +455,7 @@ namespace Insteon.Library
                     break;
             }
 
-            ProcessRelatedDeviceEvents(command1, fromAddress, toAddress);
+            ProcessRelatedDeviceEvents(command1, command2, fromAddress, toAddress);
 
             log.Info(string.Format("Received Message from {0} to {1} of type: {2}({3}):{4} ({5})", GetDeviceName(fromAddress.ToString()), GetDeviceName(toAddress.ToString()), commandType, command1.ToString("X"), command2.ToString("X"), flagDescription));
 
@@ -611,18 +611,18 @@ namespace Insteon.Library
 
                         // local data says what button to turn off
                         byte flipMask = 0xFF;
-                        switch (record.LocalData2) 
+                        switch (record.LocalData3) 
                         {
-                            case 3:
+                            case 0x03:
                                 flipMask = 0x04;
                                 break;
-                            case 4:
+                            case 0x04:
                                 flipMask = 0x08;
                                 break;
-                            case 5:
+                            case 0x05:
                                 flipMask = 0x10;
                                 break;
-                            case 6:
+                            case 0x06:
                                 flipMask = 0x20;
                                 break;
                             default:
@@ -639,14 +639,14 @@ namespace Insteon.Library
                         }
                         log.InfoFormat("Updated Button Mask to {0} for device {1}", _allDevices[i].KPLButtonMask.ToString("X"), _allDevices[i].Name);
 
-                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, record.LocalData2, 0x06, _allDevices[i].KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                         Thread.Sleep(500);
+                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, record.LocalData2, 0x09, _allDevices[i].KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
         }
 
-        private void ProcessRelatedDeviceEvents(byte command1, DeviceAddress fromAddress, DeviceAddress toAddress)
+        private void ProcessRelatedDeviceEvents(byte command1, byte command2, DeviceAddress fromAddress, DeviceAddress toAddress)
         {
             Device sourceDevice = FindDeviceForAddress(fromAddress.ToString());
             Device targetDevice = FindDeviceForAddress(toAddress.ToString());
@@ -654,7 +654,7 @@ namespace Insteon.Library
             // if the target is not an existing device (group target)
             // look at address entries for devices that are RESPONDERS to the 
             // address of the command, matching the group in the address..
-            if (null == targetDevice)
+            if (null == targetDevice || targetDevice.IsPLM)
             {
                 foreach (string i in _allDevices.Keys)
                 {
@@ -671,7 +671,8 @@ namespace Insteon.Library
                         if ((record.Flags & 0x40) == 0 && // responder
                             record.AddressToString() == fromAddress.ToString())
                         {
-                            if (record.Group == toAddress.Byte3)
+                            // its possible a kpl button sends a direct message to the PLM and the group # is in cmd2
+                            if (record.Group == toAddress.Byte3 || (targetDevice.IsPLM && record.Group == command2))
                             {
                                 log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, record.Group, record.LocalData1.ToString("X"), record.LocalData2.ToString("X"), record.LocalData3.ToString("X")));
 

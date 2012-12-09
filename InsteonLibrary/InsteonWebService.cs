@@ -223,6 +223,7 @@ namespace Insteon.Library
             dev.LastOn = DateTime.Now;
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x07);
+            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_ON, dev);
         }
 
         public void RampOn(string device, string level, string rate)
@@ -260,6 +261,7 @@ namespace Insteon.Library
             byte command2 = (byte)(brighthessByte | rampRateByte);
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_ON, command2, 0x07);
+            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_ON, dev);
         }
 
         public void Off(string device)
@@ -273,6 +275,7 @@ namespace Insteon.Library
             dev.LastOff = DateTime.Now;
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x07);
+            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_OFF, dev);
 
         }
 
@@ -299,7 +302,7 @@ namespace Insteon.Library
             byte rampRateByte = (byte)(int)(rateValue / 6.25);
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampRateByte, 0x07);
-
+            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_OFF, dev);
         }
 
         public void On2(string device, string level)

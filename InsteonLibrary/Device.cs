@@ -103,5 +103,7 @@ namespace Insteon.Library
 
         public byte KPLButtonMask { get; set; }
         public bool IsKPL { get; set; }
+
+        public bool IsBatteryDevice { get; set; }
     }
 }

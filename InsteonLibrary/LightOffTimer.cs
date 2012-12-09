@@ -37,6 +37,7 @@ namespace Insteon.Library
         void lightTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             _handler.SendStandardCommand(_device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, _device);
             _lightTimer.Dispose();
         }
     }

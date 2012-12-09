@@ -682,8 +682,10 @@ namespace Insteon.Library
                         if ((record.Flags & 0x40) == 0 && // responder
                             record.AddressToString() == fromAddress.ToString())
                         {
+                         //   log.DebugFormat("Device: {0}, TargetAddress:{1}, Command2: {2}", _allDevices[i].Name, toAddress.ToString(), command2.ToString("X"));
+
                             // its possible a kpl button sends a direct message to the PLM and the group # is in cmd2
-                            if (record.Group == toAddress.Byte3 || ((targetDevice is PLMDevice) && record.Group == command2))
+                            if (record.Group == toAddress.Byte3 || ((null != targetDevice) && ((targetDevice is PLMDevice) && record.Group == command2)))
                             {
                                 log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, record.Group, record.LocalData1.ToString("X"), record.LocalData2.ToString("X"), record.LocalData3.ToString("X")));
 
@@ -1180,7 +1182,7 @@ namespace Insteon.Library
 
                 DeviceALDB targetALDB = _aldbLibrary.Devices.FirstOrDefault(a => a.DeviceAddress == key);
 
-                if (null != targetALDB && targetALDB.Delta == _allDevices[key].Delta && targetALDB.Delta != 0x00)
+                if (null != targetALDB && targetALDB.Delta == _allDevices[key].Delta && targetALDB.Delta != 0x00 && (targetALDB.ALDBRecords != null && targetALDB.ALDBRecords.Count > 0))
                 {
                     log.DebugFormat("Device {0}'s Delta matched the stored delta ({1})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
                     continue;

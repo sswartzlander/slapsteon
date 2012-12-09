@@ -15,6 +15,7 @@ namespace Insteon.Library
     [KnownType(typeof(PLMDevice))]
     [KnownType(typeof(SensorDevice))]
     [KnownType(typeof(IODevice))]
+    [KnownType(typeof(IMultiButtonDevice))]
     public abstract class Device
     {
         private LightOffTimer _timer;

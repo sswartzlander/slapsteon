@@ -28,7 +28,7 @@ namespace Insteon.Library
 
         public string ToString()
         {
-            return Byte1.ToString("X") + Byte2.ToString("X") + Byte3.ToString("X");
+            return Byte1.ToString("X").PadLeft(2, '0') + Byte2.ToString("X").PadLeft(2, '0') + Byte3.ToString("X").PadLeft(2, '0');
         }
 
         [DataMember]

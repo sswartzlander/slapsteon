@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Runtime.Serialization;
 
 namespace Insteon.Library
 {
-    // no data contract, no need to seralize
+    [DataContract]
     public class PLMDevice : Device
     {
         public PLMDevice(string deviceName, DeviceAddress deviceAddress) : base(deviceName, deviceAddress) { }

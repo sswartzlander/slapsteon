@@ -61,7 +61,7 @@ namespace Slapsteon.UI
 
         private string GetTargetDeviceName(byte address1, byte address2, byte address3)
         {
-            string addressString = address1.ToString("X") + address2.ToString("X") + address3.ToString("X");
+            string addressString = address1.ToString("X").PadLeft(2, '0') + address2.ToString("X").PadLeft(2, '0') + address3.ToString("X").PadLeft(2, '0');
 
             if (!_allDevices.ContainsKey(addressString)) return "unknown";
 

@@ -9,6 +9,7 @@ using System.ServiceModel;
 using log4net;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace Insteon.Library
 {
@@ -155,25 +156,33 @@ namespace Insteon.Library
 
         public SlapsteonDevice[] GetDevices()
         {
-            List<Device> devices = _handler.AllDevices.Values.ToList();
-
             List<SlapsteonDevice> slapsteonDevices = new List<SlapsteonDevice>();
-
-            foreach (Device device in devices)
+            try
             {
-                SlapsteonDevice slapsteonDevice = new SlapsteonDevice()
-                {
-                    Address = device.AddressString,
-                    LastOff = device.LastOff,
-                    LastOn = device.LastOn,
-                    Name = device.Name,
-                    Status = device.Status.ToString(),
-                    IsPLM = device is PLMDevice,
-                    IsDimmable = device is DimmerDevice,
-                    IsFan = device is FanDevice
-                };
+                List<Device> devices = _handler.AllDevices.Values.ToList();
 
-                slapsteonDevices.Add(slapsteonDevice);
+
+
+                foreach (Device device in devices)
+                {
+                    SlapsteonDevice slapsteonDevice = new SlapsteonDevice()
+                    {
+                        Address = device.AddressString,
+                        LastOff = device.LastOff,
+                        LastOn = device.LastOn,
+                        Name = device.Name,
+                        Status = device.Status.ToString(),
+                        IsPLM = device is PLMDevice,
+                        IsDimmable = device is DimmerDevice,
+                        IsFan = device is FanDevice
+                    };
+
+                    slapsteonDevices.Add(slapsteonDevice);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error serializing devices: {0}\n{1}", ex.Message, ex.StackTrace);
             }
 
             return slapsteonDevices.ToArray();
@@ -181,7 +190,16 @@ namespace Insteon.Library
 
         public Device[] GetDevices2()
         {
-            return _handler.AllDevices.Values.ToArray();
+            try
+            {
+                return _handler.AllDevices.Values.ToArray();
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error serializing devices: {0}\n{1}", ex.Message, ex.StackTrace);
+            }
+
+            return null;
         }
 
         public void FastOn(string device)

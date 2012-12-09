@@ -26,6 +26,7 @@ namespace Insteon.Library
 
         private bool _gettingExtendedStatus = false;
         private bool _gettingStatus = false;
+        private bool _gettingOpFlags = false;
         private object _statusSyncObject = new object();
 
         private string _deviceALDBPath = @"C:\Insteon\DeviceALDB.xml";
@@ -300,29 +301,24 @@ namespace Insteon.Library
             {
                 if (_gettingStatus)
                 {
+                    byte delta = 0x00;
+                    if (_gettingOpFlags)
+                    {
+                        delta = message[10];
 
+                        sourceDevice.Delta = delta;
+                    }
+                    else
+                    {
+                        // read the command2 and 1 of the response to get the level as well
 
-                    //string results = BitConverter.ToString(bytesRead);
+                        byte level = message[10];
+                        delta = message[9];
 
-                    //// wait for the response
+                        sourceDevice.Status = ((int)level / 255m) * 100m;
+                        sourceDevice.Delta = delta;
 
-                    //// 02-62-1B-BC-C0-03-19-00-06-02-50-1B-BC-C0-19-77-51-2B-03-00"
-                    // 02-50-1B-BC-C0-19-77-51-2B-03-00
-
-                    //if (bytesRead[8] != 0x06)
-                    //    throw new Exception("ACK bit was not 0x06 for status command.");
-
-                    //// read the command2 and 1 of the response
-
-                    byte level = message[10];
-                    byte delta = message[9];
-
-                    //status.OnLevel = level;
-                    //status.Delta = delta;
-
-                    sourceDevice.Status = ((int)level / 255m) * 100m;
-                    sourceDevice.Delta = delta;
-
+                    }
                     _statusEventWaitHandle.Set();
                 }
 
@@ -865,7 +861,7 @@ namespace Insteon.Library
                 command[2] = deviceAddress.Byte1;
                 command[3] = deviceAddress.Byte2;
                 command[4] = deviceAddress.Byte3;
-                command[5] = 0x03;
+                command[5] = 0x0F;
                 command[6] = Constants.STD_COMMAND_STATUS_REQUEST;
                 command[7] = 0x00;
 
@@ -877,14 +873,40 @@ namespace Insteon.Library
 
                 _statusEventWaitHandle.Reset();
                 log.Info("Calling WaitOne on StatusEventWaitHandle");
-                _statusEventWaitHandle.WaitOne(5000);
+                _statusEventWaitHandle.WaitOne(10000);
                 log.Info("StatusEventWaitHandle reset");
+
+                // if we get a 0 delta with the status request, send a Get Operating Flags..
+                if (_allDevices[deviceAddress.ToString()].Delta == 0)
+                {
+                    _gettingOpFlags = true;
+                    _statusEventWaitHandle.Reset();
+
+                    command = new byte[8];
+                    command[0] = 0x02;
+                    command[1] = 0x62;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
+                    command[5] = 0xF;
+                    command[6] = Constants.STD_COMMAND_GET_OP_FLAGS;
+                    command[7] = 0x01;
+                    _plm.Write(command, 0, 8);
+
+                    _lastSentCommand = command;
+
+
+                    log.Info("Re-Calling WaitOne on StatusEventWaitHandle");
+                    _statusEventWaitHandle.WaitOne(10000);
+                    log.Info("Second StatusEventWaitHandle reset");
+                }
 
                 status = new DeviceStatus();
                 status.Delta = _allDevices[deviceAddress.ToString()].Delta;
                 status.OnLevel = Math.Round(_allDevices[deviceAddress.ToString()].Status,1);
 
                 _gettingStatus = false;
+                _gettingOpFlags = false;
             }
             catch (Exception ex)
             {
@@ -1218,8 +1240,11 @@ namespace Insteon.Library
                 {
                     _aldbEventWaitHandle.WaitOne(5000);
 
-                    if (_aldbFinishedForDevice || DateTime.Now.Subtract(_lastALDBRecordTime).TotalSeconds > 10)
+                    if (_aldbFinishedForDevice || DateTime.Now.Subtract(_lastALDBRecordTime).TotalSeconds > 20)
+                    {
+                        log.DebugFormat("Exiting ALDB Loop. Last Record Found: {0}, Last Successful Record Time: {1}", _aldbFinishedForDevice, _lastALDBRecordTime);
                         break;
+                    }
                 }
                 log.Info("Finished Waiting on ALDB entry.");
 
@@ -1234,7 +1259,7 @@ namespace Insteon.Library
             {
                 // the PLM will not respond normally to this command, there are special commands for it
                 // so do not get it in this fashion
-                if (_allDevices[key] is PLMDevice)
+                if (_allDevices[key] is PLMDevice || _allDevices[key] is SensorDevice)
                     continue;
                 log.Info(string.Format("Getting Status for {0}", _allDevices[key].Name));
 

@@ -137,6 +137,7 @@ namespace Insteon.WindowsService
                     _insteonWebService = new InsteonWebService(_handler);
                     insteonHost = new WebServiceHost(_insteonWebService);
                     insteonHost.Open();
+                    log.Info("Web Host Opened.");
                     while (!_stop)
                     {
                         Thread.Sleep(15000);

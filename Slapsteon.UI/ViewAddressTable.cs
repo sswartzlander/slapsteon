@@ -75,9 +75,9 @@ namespace Slapsteon.UI
                 Type = type;
                 Group = group;
                 Offset = offset.PadRight(4,'0');
-                LocalData1 = "0x" + ld1.ToString("X").PadRight(2,'0');
-                LocalData2 = "0x" + ld2.ToString("X").PadRight(2, '0');
-                LocalData3 = "0x" + ld3.ToString("X").PadRight(2, '0');
+                LocalData1 = "0x" + ld1.ToString("X").PadLeft(2,'0');
+                LocalData2 = "0x" + ld2.ToString("X").PadLeft(2, '0');
+                LocalData3 = "0x" + ld3.ToString("X").PadLeft(2, '0');
                 TargetDeviceName = targetDeviceName;
             }
 

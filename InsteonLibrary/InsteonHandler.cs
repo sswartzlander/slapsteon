@@ -92,14 +92,23 @@ namespace Insteon.Library
                 byte address3 = StringToByte(element.Address.Substring(4, 2));
                 
                 DeviceAddress deviceAddress= new DeviceAddress(address1, address2, address3);
-                Device dev = new Device(deviceName, deviceAddress);
-
-                dev.IsPLM = element.IsPLM ?? false;
-                dev.IsDimmable = element.IsDimmable ?? false;
-                dev.IsFan = element.IsFan ?? false;
-                dev.DefaultOffMinutes = element.DefaultOffMinutes;
-                dev.IsKPL = element.IsKPL ?? false;
-                dev.IsBatteryDevice = element.IsBatteryDevice ?? false;
+                Device dev = null;
+                if ((element.IsKPL.HasValue && element.IsKPL.Value) && (!element.IsDimmable.HasValue || !element.IsDimmable.Value))
+                    dev = new MultiButtonRelayDevice(deviceName, deviceAddress);
+                else if ((element.IsKPL.HasValue && element.IsKPL.Value) && (element.IsDimmable.HasValue && element.IsDimmable.Value))
+                    dev = new MultiButtonDimmerDevice(deviceName, deviceAddress);
+                else if (element.IsBatteryDevice.HasValue && element.IsBatteryDevice.Value)
+                    dev = new SensorDevice(deviceName, deviceAddress);
+                else if (element.IsDimmable.HasValue && element.IsDimmable.Value)
+                    dev = new DimmerDevice(deviceName, deviceAddress);
+                else if (element.IsPLM.HasValue && element.IsPLM.Value)
+                    dev = new PLMDevice(deviceName, deviceAddress);
+                else if (element.IsIODevice.HasValue && element.IsIODevice.Value)
+                    dev = new IODevice(deviceName, deviceAddress);
+                else if (element.IsFan.HasValue && element.IsFan.Value)
+                    dev = new FanDevice(deviceName, deviceAddress);
+                else
+                    dev = new RelayDevice(deviceName, deviceAddress);
 
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
@@ -287,7 +296,7 @@ namespace Insteon.Library
             string commandType = "unknown";
             Device sourceDevice = FindDeviceForAddress(fromAddress.ToString());
             Device targetDevice = FindDeviceForAddress(toAddress.ToString());
-            if (null != targetDevice && targetDevice.IsPLM)
+            if (null != targetDevice && targetDevice is PLMDevice)
             {
                 if (_gettingStatus)
                 {
@@ -498,7 +507,7 @@ namespace Insteon.Library
                 byte deviceAddress3 = message[4];
 
                 DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
-                Device device = _allDevices[deviceAddress.ToString()];
+                IMultiButtonDevice device = _allDevices[deviceAddress.ToString()] as IMultiButtonDevice;
 
                 // for now just get the button mask...
                 device.KPLButtonMask = message[21];
@@ -586,7 +595,9 @@ namespace Insteon.Library
             foreach (string i in _allDevices.Keys)
             {
                 // only really care about updating KPL buttons
-                if (!_allDevices[i].IsKPL) continue;
+                if (!(_allDevices[i] is IMultiButtonDevice)) continue;
+
+                IMultiButtonDevice kplDevice = _allDevices[i] as IMultiButtonDevice;
 
                 // ignore this change if it will be triggered by a slave device command
                 if (sourceDevice.SlaveDevices.Contains(_allDevices[i])) continue;
@@ -631,16 +642,16 @@ namespace Insteon.Library
 
                         if (command1 == Constants.STD_COMMAND_ON || command1 == Constants.STD_COMMAND_FAST_ON)
                         {
-                            _allDevices[i].KPLButtonMask |= flipMask;
+                            kplDevice.KPLButtonMask |= flipMask;
                         }
                         else if (command1 == Constants.STD_COMMAND_OFF || command1 == Constants.STD_COMMAND_FAST_OFF)
                         {
-                            _allDevices[i].KPLButtonMask &= (byte)(0xFF ^ flipMask);
+                            kplDevice.KPLButtonMask &= (byte)(0xFF ^ flipMask);
                         }
-                        log.InfoFormat("Updated Button Mask to {0} for device {1}", _allDevices[i].KPLButtonMask.ToString("X"), _allDevices[i].Name);
+                        log.InfoFormat("Updated Button Mask to {0} for device {1}", kplDevice.KPLButtonMask.ToString("X"), _allDevices[i].Name);
 
                         Thread.Sleep(500);
-                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, record.LocalData2, 0x09, _allDevices[i].KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, record.LocalData2, 0x09, kplDevice.KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
@@ -654,7 +665,7 @@ namespace Insteon.Library
             // if the target is not an existing device (group target)
             // look at address entries for devices that are RESPONDERS to the 
             // address of the command, matching the group in the address..
-            if (null == targetDevice || targetDevice.IsPLM)
+            if (null == targetDevice || targetDevice is PLMDevice)
             {
                 foreach (string i in _allDevices.Keys)
                 {
@@ -674,12 +685,13 @@ namespace Insteon.Library
                          //   log.DebugFormat("Device: {0}, TargetAddress:{1}, Command2: {2}", _allDevices[i].Name, toAddress.ToString(), command2.ToString("X"));
 
                             // its possible a kpl button sends a direct message to the PLM and the group # is in cmd2
-                            if (record.Group == toAddress.Byte3 || (null != targetDevice && (targetDevice.IsPLM && record.Group == command2)))
+                            if (record.Group == toAddress.Byte3 || ((null != targetDevice) && ((targetDevice is PLMDevice) && record.Group == command2)))
                             {
                                 log.Info(string.Format("Event detected matched ALDB record for device {0}, group {1}.  Local Data: {2} {3} {4}", _allDevices[i].Name, record.Group, record.LocalData1.ToString("X"), record.LocalData2.ToString("X"), record.LocalData3.ToString("X")));
 
-                                if (_allDevices[i].IsKPL)
+                                if (_allDevices[i] is IMultiButtonDevice)
                                 {
+                                    IMultiButtonDevice kplDevice = _allDevices[i] as IMultiButtonDevice;
                                     // update KPL button for the action.. mainly concerned with bits --XXXX--
                                     byte flipMask = 0xFF;
                                     switch (record.LocalData3)
@@ -702,13 +714,13 @@ namespace Insteon.Library
 
                                     if (command1 == Constants.STD_COMMAND_ON || command1 == Constants.STD_COMMAND_FAST_ON)
                                     {
-                                        _allDevices[i].KPLButtonMask |= flipMask;
+                                        kplDevice.KPLButtonMask |= flipMask;
                                     }
                                     else if (command1 == Constants.STD_COMMAND_OFF || command1 == Constants.STD_COMMAND_FAST_OFF)
                                     {
-                                        _allDevices[i].KPLButtonMask &= (byte)(0xFF ^ flipMask);
+                                        kplDevice.KPLButtonMask &= (byte)(0xFF ^ flipMask);
                                     }
-                                    log.InfoFormat("Updated Button Mask to {0} for device {1}", _allDevices[i].KPLButtonMask.ToString("X"), _allDevices[i].Name);
+                                    log.InfoFormat("Updated Button Mask to {0} for device {1}", kplDevice.KPLButtonMask.ToString("X"), _allDevices[i].Name);
                                 }
 
                                 if ((command1 == Constants.STD_COMMAND_FAST_ON || command1 == Constants.STD_COMMAND_ON) && _allDevices[i].DefaultOffMinutes.HasValue)
@@ -1165,7 +1177,7 @@ namespace Insteon.Library
             {
                 // the PLM will not respond normally to this command, there are special commands for it
                 // so do not get it in this fashion, also battery devices are asleep so ignore them
-                if (_allDevices[key].IsPLM || _allDevices[key].IsBatteryDevice)
+                if ((_allDevices[key] is PLMDevice)|| (_allDevices[key] is SensorDevice))
                     continue;
 
                 DeviceALDB targetALDB = _aldbLibrary.Devices.FirstOrDefault(a => a.DeviceAddress == key);
@@ -1222,7 +1234,7 @@ namespace Insteon.Library
             {
                 // the PLM will not respond normally to this command, there are special commands for it
                 // so do not get it in this fashion
-                if (_allDevices[key].IsPLM)
+                if (_allDevices[key] is PLMDevice)
                     continue;
                 log.Info(string.Format("Getting Status for {0}", _allDevices[key].Name));
 
@@ -1234,11 +1246,11 @@ namespace Insteon.Library
 
                 Thread.Sleep(300);
 
-                if (_allDevices[key].IsKPL)
+                if (_allDevices[key] is IMultiButtonDevice)
                 {
                     log.InfoFormat("Getting KPL Button Mask for device {0}", _allDevices[key].Name);
                     GetKPLInformation(_allDevices[key].Address);
-                    log.InfoFormat("Returned from  Get KPL Information, Button Mask: " + _allDevices[key].KPLButtonMask.ToString("X"));
+                    log.InfoFormat("Returned from  Get KPL Information, Button Mask: " + ((IMultiButtonDevice)_allDevices[key]).KPLButtonMask.ToString("X"));
                     Thread.Sleep(300);
                 }
             }

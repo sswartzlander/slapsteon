@@ -204,6 +204,7 @@ namespace Insteon.WindowsService
                         if (DateTime.Now.TimeOfDay >= sunsetTimeSpan || DateTime.Now.TimeOfDay < sunriseTimeSpan)
                         {
                             _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x0F);
+                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_ON, coachLights);
                             coachLights.Status = 1;
                             coachLights.LastOn = DateTime.Now;
                             log.Info(string.Format("Turned coach lights on at {0}.  Sunset Timespan: {1}, Sunset Decimal: {2}", DateTime.Now, sunsetTimeSpan.ToString(), sunset));
@@ -215,6 +216,7 @@ namespace Insteon.WindowsService
                         if (DateTime.Now.TimeOfDay >= sunriseTimeSpan && DateTime.Now.TimeOfDay < sunsetTimeSpan)
                         {
                             _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, coachLights);
                             coachLights.Status = 0;
                             coachLights.LastOff = DateTime.Now;
                             log.Info(string.Format("Turned coach lights off at {0}.  Sunrise Timespan: {1}, Sunrise Decimal: {2}", DateTime.Now, sunriseTimeSpan.ToString(), sunrise));

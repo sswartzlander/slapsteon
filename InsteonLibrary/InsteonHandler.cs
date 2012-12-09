@@ -561,7 +561,7 @@ namespace Insteon.Library
             }
         }
 
-        internal void ProcessSendingRelatedEvents(byte command1, Device sourceDevice)
+        public void ProcessSendingRelatedEvents(byte command1, Device sourceDevice)
         {
             log.InfoFormat("Processing related device events for 0x{0} for device {1}", command1.ToString("X"), sourceDevice.Name);
 

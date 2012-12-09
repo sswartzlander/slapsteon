@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Timers;
+using log4net;
 
 namespace Insteon.Library
 {
@@ -12,6 +13,7 @@ namespace Insteon.Library
         private TimeSpan _duration;
         private InsteonHandler _handler;
         private Timer _lightTimer;
+        private static readonly ILog log = LogManager.GetLogger("Insteon");
 
         public LightOffTimer(Device device, TimeSpan duration, InsteonHandler handler) 
         {
@@ -26,6 +28,7 @@ namespace Insteon.Library
 
             _lightTimer.Elapsed += new ElapsedEventHandler(lightTimer_Elapsed);
             _lightTimer.Start();
+            log.InfoFormat("Started countdown timer on device {0} for {1} minutes.", _device.Name, _duration.TotalMinutes);
         }
 
         public void Reset()

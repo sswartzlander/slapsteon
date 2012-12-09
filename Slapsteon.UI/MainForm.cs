@@ -184,9 +184,13 @@ namespace Slapsteon.UI
         {
             try
             {
-                //ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
-                //    _handler.AllDevices[_selectedDevice.Address.ToString()].ALDB.Values.ToList());
-                //viewAddressTable.ShowDialog();
+                DeviceALDB deviceALDB = _handler.AllDeviceALDB.Devices.FirstOrDefault(d => d.DeviceAddress == _selectedDevice.AddressString);
+                if (null == deviceALDB) return;
+
+                ViewAddressTable viewAddressTable = new ViewAddressTable(_selectedDevice.Name,
+                   deviceALDB, _handler.AllDevices);
+
+                viewAddressTable.ShowDialog();
 
             }
             catch (Exception ex)

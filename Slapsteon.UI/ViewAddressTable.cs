@@ -13,12 +13,14 @@ namespace Slapsteon.UI
     public partial class ViewAddressTable : Form
     {
         private string _deviceName;
-        private List<AddressRecord> _aldb;
+        private DeviceALDB _aldb;
         private List<ALDBFriendlyEntry> _aldbFriendly = new List<ALDBFriendlyEntry>();
-        public ViewAddressTable(string deviceName, List<AddressRecord> aldbRecords)
+        private Dictionary<string, Device> _allDevices;
+        public ViewAddressTable(string deviceName, DeviceALDB deviceALDB, Dictionary<string,Device> allDevices)
         {
-            _aldb = aldbRecords;
+            _aldb = deviceALDB;
             _deviceName = deviceName;
+            _allDevices = allDevices;
             InitializeComponent();
         }
 
@@ -26,16 +28,16 @@ namespace Slapsteon.UI
         {
             gbDeviceAddressTable.Text = _deviceName;
 
-            foreach (AddressRecord record in _aldb)
+            foreach (ALDBRecord record in _aldb.ALDBRecords)
             {
                 ALDBFriendlyEntry entry = new ALDBFriendlyEntry(
-                    record.Type.ToString(),
-                    (int)record.GroupNumber,
-                    record.AddressOffset,
+                    record.Flags.ToString("X"),
+                    (int)record.Group,
+                    record.AddressMSB.ToString("X") + record.AddressLSB.ToString("X"),
                     record.LocalData1,
                     record.LocalData2,
                     record.LocalData3,
-                    record.AddressDeviceName);
+                    GetTargetDeviceName(record.Address1, record.Address2, record.Address3));
 
                 _aldbFriendly.Add(entry);
             }
@@ -55,6 +57,15 @@ namespace Slapsteon.UI
             dgvALDB.Columns["Group"].HeaderText = "Grp";
 
             dgvALDB.Columns["TargetDeviceName"].HeaderText = "Target";
+        }
+
+        private string GetTargetDeviceName(byte address1, byte address2, byte address3)
+        {
+            string addressString = address1.ToString("X") + address2.ToString("X") + address3.ToString("X");
+
+            if (!_allDevices.ContainsKey(addressString)) return "unknown";
+
+            return _allDevices[addressString].Name;
         }
 
         private class ALDBFriendlyEntry

@@ -29,6 +29,8 @@ namespace Insteon.Library
         private object _statusSyncObject = new object();
 
         private string _deviceALDBPath = @"C:\Insteon\DeviceALDB.xml";
+        private DateTime _lastALDBRecordTime;
+        private bool _aldbFinishedForDevice = false;
 
         private EventWaitHandle _aldbEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
         private EventWaitHandle _statusEventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
@@ -40,6 +42,14 @@ namespace Insteon.Library
             get
             {
                 return _allDevices;
+            }
+        }
+
+        public ALDBLibrary AllDeviceALDB
+        {
+            get
+            {
+                return _aldbLibrary;
             }
         }
 
@@ -507,6 +517,8 @@ namespace Insteon.Library
         {
             try
             {
+                _lastALDBRecordTime = DateTime.Now;
+
                 byte deviceAddress1 = message[2];
                 byte deviceAddress2 = message[3];
                 byte deviceAddress3 = message[4];
@@ -548,6 +560,7 @@ namespace Insteon.Library
 
                 if ((record.Flags == 0x00) && ((record.Address1 == 0x00) && (record.Address2 == 0x00) && (record.Address3 == 0x00)))
                 {
+                    _aldbFinishedForDevice = true;
                     log.Info("Reached last address record.");
                     _aldbEventWaitHandle.Set();
 
@@ -1184,7 +1197,15 @@ namespace Insteon.Library
                 log.Info("Waiting on ALDB Event Handle");
                 // todo: make a better way of detecting a timeout..as my database sizes grow i keep incrementing
                 // this timeout to prevent quitting before we're done
-                _aldbEventWaitHandle.WaitOne(120000);
+                _aldbFinishedForDevice = false;
+                _lastALDBRecordTime = DateTime.Now;
+                while (true)
+                {
+                    _aldbEventWaitHandle.WaitOne(5000);
+
+                    if (_aldbFinishedForDevice || DateTime.Now.Subtract(_lastALDBRecordTime).TotalSeconds > 10)
+                        break;
+                }
                 log.Info("Finished Waiting on ALDB entry.");
 
                 log.Info(string.Format("Found {0} ALDB entries for device: {1}", targetALDB.ALDBRecords.Count, _allDevices[key].Name));

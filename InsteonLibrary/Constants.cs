@@ -202,5 +202,6 @@ namespace Insteon.Library
         public const byte IM_COMMAND_START_ALL_LINKING = 0x64;
         public const byte IM_COMMAND_CANCEL_ALL_LINKING = 0x65;
         public const byte IM_COMMAND_ALL_LINK_RECORD_RESPONSE = 0x57;
+        public const byte IM_COMMAND_RESET_IM = 0x67;
     }
 }

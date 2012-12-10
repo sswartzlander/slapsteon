@@ -468,7 +468,7 @@ namespace Insteon.Library
             if (null != InsteonTrafficDetected)
             {
                 InsteonTrafficEventArgs args = new InsteonTrafficEventArgs();
-                args.Source = _allDevices[fromAddress.ToString()];
+                args.Source = _allDevices.ContainsKey(fromAddress.ToString()) ? _allDevices[fromAddress.ToString()] : null;
                 args.Destination = toAddress;
                 args.Flags = flag;
                 args.Command1 = command1;
@@ -747,13 +747,17 @@ namespace Insteon.Library
             return true;
         }
 
-
         public string SendStandardCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags)
+        {
+            return SendStandardCommand(deviceAddress, command1, command2, flags, false);
+        }
+
+        public string SendStandardCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, bool isUnknownDevice)
         {
             string results = null;
 
-            Device targetDevice;
-            if (!_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
+            Device targetDevice = null;
+            if (!isUnknownDevice && !_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
                 throw new Exception("No known device matched the specified address.");
 
             byte[] command = new byte[8];
@@ -764,16 +768,19 @@ namespace Insteon.Library
 
                 command[0] = 0x02; // Insteon start byte
                 command[1] = 0x62; // Standard Command
-                command[2] = targetDevice.Address.Byte1;
-                command[3] = targetDevice.Address.Byte2;
-                command[4] = targetDevice.Address.Byte3;
+                command[2] = deviceAddress.Byte1;
+                command[3] = deviceAddress.Byte2;
+                command[4] = deviceAddress.Byte3;
                 command[5] = flags; // for standard 0x0F is good
                 command[6] = command1;
                 command[7] = command2;
 
                 _plm.Write(command, 0, 8);
 
-                log.Debug(string.Format("Sent Standard Command {0} to device {1} (address: {2})", command1.ToString("X"), targetDevice.Name, targetDevice.AddressString));
+                log.Debug(string.Format("Sent Standard Command {0} to device {1} (address: {2})", command1.ToString("X"), null != targetDevice ? targetDevice.Name : "Unknown", null != targetDevice ? targetDevice.AddressString : deviceAddress.ToString()));
+
+                if (null == targetDevice)
+                    return null;
 
                 // write more to the command for slave devices
                 foreach (Device slaveDevice in targetDevice.SlaveDevices)
@@ -797,7 +804,7 @@ namespace Insteon.Library
             }
             catch (Exception ex)
             {
-                log.Error(string.Format("Error sending command {0} to {1}. (Flags: {2})", command1.ToString("X"), targetDevice.Name, flags.ToString("X")), ex);
+                log.Error(string.Format("Error sending command {0} to {1}. (Flags: {2})", command1.ToString("X"), null != targetDevice ? targetDevice.Name : deviceAddress.ToString(), flags.ToString("X")), ex);
             }
 
             return results;
@@ -806,10 +813,17 @@ namespace Insteon.Library
         public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
             byte ud5, byte ud6, byte ud7, byte ud8, byte ud9, byte ud10, byte ud11, byte ud12, byte ud13, byte ud14)
         {
+            SendExtendedCommand(deviceAddress, command1, command2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8, ud9, ud10,
+                ud11, ud12, ud13, ud14, false);
+        }
+
+        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
+            byte ud5, byte ud6, byte ud7, byte ud8, byte ud9, byte ud10, byte ud11, byte ud12, byte ud13, byte ud14, bool isUnknownDevice)
+        {
             byte[] command = new byte[22];
 
-            Device targetDevice;
-            if (!_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
+            Device targetDevice = null;
+            if (!isUnknownDevice && !_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
                 throw new Exception("No known device matched the specified address.");
 
             try
@@ -818,9 +832,9 @@ namespace Insteon.Library
                 {
                     command[0] = 0x02; // Insteon start byte
                     command[1] = 0x62; // Standard Command
-                    command[2] = targetDevice.Address.Byte1;
-                    command[3] = targetDevice.Address.Byte2;
-                    command[4] = targetDevice.Address.Byte3;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
                     command[5] = flags |= 0x10; // for standard 0x0F is good
                     command[6] = command1;
                     command[7] = command2;
@@ -840,16 +854,67 @@ namespace Insteon.Library
                     command[21] = ud14;
                     _plm.Write(command, 0, 22);
                     Thread.Sleep(250);
-                    log.Info(string.Format("Sent command {0} to device {1}.  (Command2: {2}, Flags: {3})", command1.ToString("X"), targetDevice.Name, command2.ToString("X"), flags.ToString("X")));
+                    log.Info(string.Format("Sent command {0} to device {1}.  (Command2: {2}, Flags: {3})", command1.ToString("X"), null != targetDevice ? targetDevice.Name : "Unknown", command2.ToString("X"), flags.ToString("X")));
                     _lastSentCommand = command;
                 }
             }
             catch (Exception ex)
             {
-                log.Error(string.Format("Error sending command {0} to {1}. (Flags: {2})", command1.ToString("X"), targetDevice.Name, flags.ToString("X")), ex);
+                log.Error(string.Format("Error sending command {0} to {1}. (Flags: {2})", command1.ToString("X"), null != targetDevice ? targetDevice.Name : "Unknown", flags.ToString("X")), ex);
             }
         }
 
+        public void SendIMCommandReset()
+        {
+
+            try
+            {
+                byte[] command = new byte[2];
+                command[0] = 0x02;
+                command[1] = 0x67;
+
+                _plm.Write(command, 0, 2);
+                Thread.Sleep(20000);
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error occurred while resetting the IM: {0}\n{1}", ex.Message, ex.StackTrace);
+            }
+        }
+
+        public void SendStartAllLink()
+        {
+            try
+            {
+                byte[] command = new byte[4];
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_START_ALL_LINKING;
+                command[2] = 0x03; // Link Code: 0x00 Responder, 0x01 Controller, 0x03 Controller when IM initiates, Responder when other device, 0xFF delete the All-Link
+                command[3] = 0x00; // group number
+
+                _plm.Write(command, 0, 4);
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        public void SendCancelAllLink()
+        {
+            try
+            {
+                byte[] command = new byte[2];
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_CANCEL_ALL_LINKING;
+                _plm.Write(command, 0, 2);
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
         public DeviceStatus GetDeviceStatus(DeviceAddress deviceAddress)
         {
             byte[] command = new byte[8];
@@ -1088,7 +1153,18 @@ namespace Insteon.Library
                                 break;
                             command = ExtractCommandFromBuffer(10);
                             break;
+                        case Constants.IM_COMMAND_RESET_IM:
 
+                            if (_bufferOffset < 3)
+                                break;
+                            command = ExtractCommandFromBuffer(3);
+
+                            if (command[2] == 0x06)
+                                log.Info("Successfully Reset the IM");
+                            else
+                                log.InfoFormat("Failed to Reset IM: {0}", command[2].ToString("X"));
+
+                            break;
                         default:
                             log.Warn(string.Format("Unknown IM command type in the buffer: {0}.  Cleaning the buffer.", _buffer[1].ToString("X")));
                             

@@ -101,14 +101,14 @@ namespace Insteon.Library
                     dev = new MultiButtonDimmerDevice(deviceName, deviceAddress);
                 else if (element.IsBatteryDevice.HasValue && element.IsBatteryDevice.Value)
                     dev = new SensorDevice(deviceName, deviceAddress);
+                else if (element.IsFan.HasValue && element.IsFan.Value)
+                    dev = new FanDevice(deviceName, deviceAddress);              
                 else if (element.IsDimmable.HasValue && element.IsDimmable.Value)
                     dev = new DimmerDevice(deviceName, deviceAddress);
                 else if (element.IsPLM.HasValue && element.IsPLM.Value)
                     dev = new PLMDevice(deviceName, deviceAddress);
                 else if (element.IsIODevice.HasValue && element.IsIODevice.Value)
                     dev = new IODevice(deviceName, deviceAddress);
-                else if (element.IsFan.HasValue && element.IsFan.Value)
-                    dev = new FanDevice(deviceName, deviceAddress);
                 else
                     dev = new RelayDevice(deviceName, deviceAddress);
 

@@ -66,8 +66,22 @@ namespace Slapsteon.UI
             byte cmd1 = StringToByte(txtCmd1.Text);
             byte cmd2 = StringToByte(txtCmd2.Text);
             byte flags = StringToByte(txtFlags.Text);
+            string commandResult = null;
+            // for sending commands to devices not in our config yet...
+            if (null == _selectedDevice || _selectedDevice is PLMDevice)
+            {
+                DeviceAddress destinationAddress = new DeviceAddress(
+                    StringToByte(txtUD1.Text),
+                    StringToByte(txtUD2.Text),
+                    StringToByte(txtUD3.Text));
 
-            string commandResult = _handler.SendStandardCommand(_selectedDevice.Address, cmd1, cmd2, flags);
+                commandResult = _handler.SendStandardCommand(destinationAddress,
+                    cmd1, cmd2, flags,true);
+
+                return;
+            }
+
+            commandResult = _handler.SendStandardCommand(_selectedDevice.Address, cmd1, cmd2, flags);
 
             rtCommandResults.Text = commandResult;
         }
@@ -114,6 +128,20 @@ namespace Slapsteon.UI
             byte ud13 = StringToByte(txtUD13.Text);
             byte ud14 = StringToByte(txtUD14.Text);
 
+
+            if (null == _selectedDevice || _selectedDevice is PLMDevice)
+            {
+                // this is a hack to handle linking non-configured devices w/ the checksum
+
+                // this is what i saw reflecting in houselinc...
+                byte checksum = (byte)(((0x09 + cmd2) ^ 0xFF) + 1);
+                DeviceAddress targetAddress = new DeviceAddress(ud1, ud2, ud3);
+                _handler.SendExtendedCommand(targetAddress, cmd1, cmd2, flags, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, checksum, true);
+
+
+            }
+            else 
             _handler.SendExtendedCommand(_selectedDevice.Address, cmd1, cmd2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
                 ud9, ud10, ud11, ud12, ud13, ud14);
 
@@ -198,6 +226,23 @@ namespace Slapsteon.UI
             {
 
             }
+        }
+
+        private void btnResetPLM_Click(object sender, EventArgs e)
+        {
+            if (txtCmd1.Text != "0x99") return;
+
+            _handler.SendIMCommandReset();
+        }
+
+        private void btnStartAllLink_Click(object sender, EventArgs e)
+        {
+            _handler.SendStartAllLink();
+        }
+
+        private void btnCancelAllLink_Click(object sender, EventArgs e)
+        {
+            _handler.SendCancelAllLink();
         }
     }
 }

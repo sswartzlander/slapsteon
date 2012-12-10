@@ -20,7 +20,7 @@ namespace Insteon.Library
         public string ToString()
         {
             return string.Format("Source: {0}, Dest: {1}, Flags: {2}, Command1: {3}, Command2: {4}. (Description: {5})",
-                Source.Name.ToString(), Destination.ToString(), Flags, Command1.ToString("X"), Command2.ToString("X"), Description);
+                Source != null ? Source.Name.ToString() : "Unknown", Destination.ToString(), Flags, Command1.ToString("X"), Command2.ToString("X"), Description);
         }
     }
 }

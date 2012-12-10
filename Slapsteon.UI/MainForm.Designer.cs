@@ -30,6 +30,12 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnGetAddressTable = new System.Windows.Forms.Button();
+            this.lblDelta = new System.Windows.Forms.Label();
+            this.label23 = new System.Windows.Forms.Label();
+            this.lblOnLevel = new System.Windows.Forms.Label();
+            this.label22 = new System.Windows.Forms.Label();
+            this.btnGetStatus = new System.Windows.Forms.Button();
             this.lblName = new System.Windows.Forms.Label();
             this.lblAddress = new System.Windows.Forms.Label();
             this.label21 = new System.Windows.Forms.Label();
@@ -81,14 +87,11 @@
             this.Address = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.LastOn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.LastOff = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.btnGetStatus = new System.Windows.Forms.Button();
-            this.label22 = new System.Windows.Forms.Label();
-            this.lblOnLevel = new System.Windows.Forms.Label();
-            this.label23 = new System.Windows.Forms.Label();
-            this.lblDelta = new System.Windows.Forms.Label();
             this.rtConsole = new System.Windows.Forms.RichTextBox();
             this.btnClearConsole = new System.Windows.Forms.Button();
-            this.btnGetAddressTable = new System.Windows.Forms.Button();
+            this.btnResetPLM = new System.Windows.Forms.Button();
+            this.btnStartAllLink = new System.Windows.Forms.Button();
+            this.btnCancelAllLink = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevices)).BeginInit();
             this.SuspendLayout();
@@ -113,6 +116,60 @@
             this.groupBox1.TabIndex = 1;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Status";
+            // 
+            // btnGetAddressTable
+            // 
+            this.btnGetAddressTable.Location = new System.Drawing.Point(147, 44);
+            this.btnGetAddressTable.Name = "btnGetAddressTable";
+            this.btnGetAddressTable.Size = new System.Drawing.Size(75, 23);
+            this.btnGetAddressTable.TabIndex = 11;
+            this.btnGetAddressTable.Text = "Get Address";
+            this.btnGetAddressTable.UseVisualStyleBackColor = true;
+            this.btnGetAddressTable.Click += new System.EventHandler(this.btnGetAddressTable_Click);
+            // 
+            // lblDelta
+            // 
+            this.lblDelta.AutoSize = true;
+            this.lblDelta.Location = new System.Drawing.Point(99, 147);
+            this.lblDelta.Name = "lblDelta";
+            this.lblDelta.Size = new System.Drawing.Size(0, 13);
+            this.lblDelta.TabIndex = 10;
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(8, 147);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(32, 13);
+            this.label23.TabIndex = 9;
+            this.label23.Text = "Delta";
+            // 
+            // lblOnLevel
+            // 
+            this.lblOnLevel.AutoSize = true;
+            this.lblOnLevel.Location = new System.Drawing.Point(99, 124);
+            this.lblOnLevel.Name = "lblOnLevel";
+            this.lblOnLevel.Size = new System.Drawing.Size(0, 13);
+            this.lblOnLevel.TabIndex = 8;
+            // 
+            // label22
+            // 
+            this.label22.AutoSize = true;
+            this.label22.Location = new System.Drawing.Point(9, 124);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(33, 13);
+            this.label22.TabIndex = 7;
+            this.label22.Text = "Level";
+            // 
+            // btnGetStatus
+            // 
+            this.btnGetStatus.Location = new System.Drawing.Point(147, 15);
+            this.btnGetStatus.Name = "btnGetStatus";
+            this.btnGetStatus.Size = new System.Drawing.Size(75, 23);
+            this.btnGetStatus.TabIndex = 6;
+            this.btnGetStatus.Text = "Get Status";
+            this.btnGetStatus.UseVisualStyleBackColor = true;
+            this.btnGetStatus.Click += new System.EventHandler(this.btnGetStatus_Click);
             // 
             // lblName
             // 
@@ -544,50 +601,6 @@
             this.LastOff.ReadOnly = true;
             this.LastOff.Visible = false;
             // 
-            // btnGetStatus
-            // 
-            this.btnGetStatus.Location = new System.Drawing.Point(147, 15);
-            this.btnGetStatus.Name = "btnGetStatus";
-            this.btnGetStatus.Size = new System.Drawing.Size(75, 23);
-            this.btnGetStatus.TabIndex = 6;
-            this.btnGetStatus.Text = "Get Status";
-            this.btnGetStatus.UseVisualStyleBackColor = true;
-            this.btnGetStatus.Click += new System.EventHandler(this.btnGetStatus_Click);
-            // 
-            // label22
-            // 
-            this.label22.AutoSize = true;
-            this.label22.Location = new System.Drawing.Point(9, 124);
-            this.label22.Name = "label22";
-            this.label22.Size = new System.Drawing.Size(33, 13);
-            this.label22.TabIndex = 7;
-            this.label22.Text = "Level";
-            // 
-            // lblOnLevel
-            // 
-            this.lblOnLevel.AutoSize = true;
-            this.lblOnLevel.Location = new System.Drawing.Point(99, 124);
-            this.lblOnLevel.Name = "lblOnLevel";
-            this.lblOnLevel.Size = new System.Drawing.Size(0, 13);
-            this.lblOnLevel.TabIndex = 8;
-            // 
-            // label23
-            // 
-            this.label23.AutoSize = true;
-            this.label23.Location = new System.Drawing.Point(8, 147);
-            this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(32, 13);
-            this.label23.TabIndex = 9;
-            this.label23.Text = "Delta";
-            // 
-            // lblDelta
-            // 
-            this.lblDelta.AutoSize = true;
-            this.lblDelta.Location = new System.Drawing.Point(99, 147);
-            this.lblDelta.Name = "lblDelta";
-            this.lblDelta.Size = new System.Drawing.Size(0, 13);
-            this.lblDelta.TabIndex = 10;
-            // 
             // rtConsole
             // 
             this.rtConsole.Location = new System.Drawing.Point(324, 253);
@@ -607,21 +620,44 @@
             this.btnClearConsole.UseVisualStyleBackColor = true;
             this.btnClearConsole.Click += new System.EventHandler(this.btnClearConsole_Click);
             // 
-            // btnGetAddressTable
+            // btnResetPLM
             // 
-            this.btnGetAddressTable.Location = new System.Drawing.Point(147, 44);
-            this.btnGetAddressTable.Name = "btnGetAddressTable";
-            this.btnGetAddressTable.Size = new System.Drawing.Size(75, 23);
-            this.btnGetAddressTable.TabIndex = 11;
-            this.btnGetAddressTable.Text = "Get Address";
-            this.btnGetAddressTable.UseVisualStyleBackColor = true;
-            this.btnGetAddressTable.Click += new System.EventHandler(this.btnGetAddressTable_Click);
+            this.btnResetPLM.Location = new System.Drawing.Point(324, 457);
+            this.btnResetPLM.Name = "btnResetPLM";
+            this.btnResetPLM.Size = new System.Drawing.Size(75, 23);
+            this.btnResetPLM.TabIndex = 40;
+            this.btnResetPLM.Text = "Reset PLM";
+            this.btnResetPLM.UseVisualStyleBackColor = true;
+            this.btnResetPLM.Click += new System.EventHandler(this.btnResetPLM_Click);
+            // 
+            // btnStartAllLink
+            // 
+            this.btnStartAllLink.Location = new System.Drawing.Point(421, 457);
+            this.btnStartAllLink.Name = "btnStartAllLink";
+            this.btnStartAllLink.Size = new System.Drawing.Size(75, 23);
+            this.btnStartAllLink.TabIndex = 41;
+            this.btnStartAllLink.Text = "Start All-Link";
+            this.btnStartAllLink.UseVisualStyleBackColor = true;
+            this.btnStartAllLink.Click += new System.EventHandler(this.btnStartAllLink_Click);
+            // 
+            // btnCancelAllLink
+            // 
+            this.btnCancelAllLink.Location = new System.Drawing.Point(513, 457);
+            this.btnCancelAllLink.Name = "btnCancelAllLink";
+            this.btnCancelAllLink.Size = new System.Drawing.Size(94, 23);
+            this.btnCancelAllLink.TabIndex = 42;
+            this.btnCancelAllLink.Text = "Cancel All-Link";
+            this.btnCancelAllLink.UseVisualStyleBackColor = true;
+            this.btnCancelAllLink.Click += new System.EventHandler(this.btnCancelAllLink_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(769, 492);
+            this.Controls.Add(this.btnCancelAllLink);
+            this.Controls.Add(this.btnStartAllLink);
+            this.Controls.Add(this.btnResetPLM);
             this.Controls.Add(this.btnClearConsole);
             this.Controls.Add(this.rtConsole);
             this.Controls.Add(this.dgvDevices);
@@ -737,6 +773,9 @@
         private System.Windows.Forms.RichTextBox rtConsole;
         private System.Windows.Forms.Button btnClearConsole;
         private System.Windows.Forms.Button btnGetAddressTable;
+        private System.Windows.Forms.Button btnResetPLM;
+        private System.Windows.Forms.Button btnStartAllLink;
+        private System.Windows.Forms.Button btnCancelAllLink;
 
     }
 }

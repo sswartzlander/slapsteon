@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
+    public delegate void DeviceTimerCallBack(Device device);
+
     [DataContract]
     [KnownType(typeof(FanDevice))]
     [KnownType(typeof(DimmerDevice))]
@@ -16,7 +18,7 @@ namespace Insteon.Library
     [KnownType(typeof(SensorDevice))]
     [KnownType(typeof(IODevice))]
     [KnownType(typeof(IMultiButtonDevice))]
-    public abstract class Device
+    public class Device
     {
         private LightOffTimer _timer;
 
@@ -25,7 +27,7 @@ namespace Insteon.Library
 
         }
 
-        public void SetTimer(InsteonHandler handler)
+        public void SetTimer(DeviceTimerCallBack timerCallback)
         {
             if (!DefaultOffMinutes.HasValue)
                 return;
@@ -36,7 +38,7 @@ namespace Insteon.Library
                 _timer = null;
             }
 
-            _timer = new LightOffTimer(this, new TimeSpan(0, DefaultOffMinutes.Value, 0), handler);
+            _timer = new LightOffTimer(this, new TimeSpan(0, DefaultOffMinutes.Value, 0), timerCallback);
             _timer.Start();
         }
 

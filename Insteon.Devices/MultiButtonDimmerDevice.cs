@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
     [DataContract]
-    public class MultiButtonRelayDevice : RelayDevice, IMultiButtonDevice
+    public class MultiButtonDimmerDevice : DimmerDevice, IMultiButtonDevice
     {
-        public MultiButtonRelayDevice(string deviceName, DeviceAddress deviceAddress) : base(deviceName, deviceAddress) { }
+        public MultiButtonDimmerDevice(string deviceName, DeviceAddress deviceAddress) : base(deviceName, deviceAddress) { }
         [DataMember]
         public byte KPLButtonMask { get; set; }
 

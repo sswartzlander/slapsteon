@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{972ABBAF-A8B4-4F8E-9DD0-E49C167D4FAB}</ProjectGuid>
+    <ProjectGuid>{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Insteon.Library</RootNamespace>
-    <AssemblyName>Insteon.Library</AssemblyName>
+    <RootNamespace>Insteon.Devices</RootNamespace>
+    <AssemblyName>Insteon.Devices</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -34,15 +34,9 @@
     <Reference Include="log4net">
       <HintPath>..\include\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\include\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.ServiceModel.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -50,30 +44,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddressEntryType.cs" />
-    <Compile Include="ALDBLibrary.cs" />
-    <Compile Include="Configuration\SlapsteonConfigurationElement.cs" />
-    <Compile Include="Configuration\SlapsteonConfigurationElementCollection.cs" />
-    <Compile Include="Configuration\SlapsteonConfigurationSection.cs" />
-    <Compile Include="Configuration\SlapsteonDeviceConfigurationElement.cs" />
-    <Compile Include="Constants.cs" />
-    <Compile Include="DeviceALDB.cs" />
-    <Compile Include="DeviceStatus.cs" />
-    <Compile Include="FlagsAck.cs" />
-    <Compile Include="InsteonExtendedCommand.cs" />
-    <Compile Include="InsteonHandler.cs" />
-    <Compile Include="IInsteonWebService.cs" />
-    <Compile Include="InsteonStandardCommand.cs" />
-    <Compile Include="InsteonTrafficEventArgs.cs" />
-    <Compile Include="InsteonWebService.cs" />
+    <Compile Include="Device.cs" />
+    <Compile Include="DeviceAddress.cs" />
+    <Compile Include="DimmerDevice.cs" />
+    <Compile Include="FanDevice.cs" />
+    <Compile Include="IMultiButtonDevice.cs" />
+    <Compile Include="IODevice.cs" />
+    <Compile Include="LightOffTimer.cs" />
+    <Compile Include="MultiButtonDimmerDevice.cs" />
+    <Compile Include="MultiButtonRelayDevice.cs" />
+    <Compile Include="PLMDevice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SlapsteonDevice.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Insteon.Devices\Insteon.Devices.csproj">
-      <Project>{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}</Project>
-      <Name>Insteon.Devices</Name>
-    </ProjectReference>
+    <Compile Include="RelayDevice.cs" />
+    <Compile Include="SensorDevice.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

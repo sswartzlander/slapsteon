@@ -5,6 +5,9 @@ using System.Web;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
+using Slapsteon.Web.Models;
+using Insteon.Devices;
+using Newtonsoft.Json.Serialization;
 
 namespace Slapsteon.Web.Business
 {
@@ -30,6 +33,33 @@ namespace Slapsteon.Web.Business
 
                 slapsteonDevices = JsonConvert.DeserializeObject<SlapsteonDevice[]>(responseString);
                 devices = slapsteonDevices.ToList();
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return devices;
+        }
+
+        public List<Device> GetDevices2()
+        {
+            List<Device> devices = new List<Device>();
+            Device[] devArray = null;
+            try
+            {
+                WebRequest request = WebRequest.Create("http://localhost/InsteonWebService/GetDevices2") as WebRequest;
+                request.Method = "GET";
+                request.ContentType = "application/json";
+                request.ContentLength = 0;
+
+                WebResponse response = request.GetResponse();
+                string responseString = null;
+
+                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                    responseString = reader.ReadToEnd();
+
+                devArray = JsonConvert.DeserializeObject<Device[]>(responseString, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto});
+                devices = devArray.ToList();
             }
             catch (Exception ex)
             {
@@ -82,6 +112,24 @@ namespace Slapsteon.Web.Business
 
         }
     }
+
+    //private class DeviceJsonSerializer<T>
+    //{
+    //    private IContractResolver _resolver;
+
+    //    public DeviceJsonSerializer(IContractResolver resolver)
+    //    {
+    //        _resolver = resolver;
+    //    }
+
+    //    public List<R> FromJson<List<R>>(object json)
+    //    {
+    //        if (typeof(T).IsAssignableFrom(typeof(R)))
+    //        {
+    //            object res = JsonConvert.Des
+    //        }
+    //    }
+    //}
 }
 
 /*

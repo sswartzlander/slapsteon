@@ -34,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Insteon.Devices">
+      <HintPath>..\Insteon.Devices\bin\Release\Insteon.Devices.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\include\Newtonsoft.Json.dll</HintPath>
@@ -71,6 +74,15 @@
   <ItemGroup>
     <Compile Include="Business\AddressRecord.cs" />
     <Compile Include="Business\AddressEntryType.cs" />
+    <None Include="Models\MultiButtonRelayDevice.cs" />
+    <None Include="Models\MultiButtonDimmerDevice.cs" />
+    <None Include="Models\IODevice.cs" />
+    <None Include="Models\PLMDevice.cs" />
+    <None Include="Models\SensorDevice.cs" />
+    <None Include="Models\RelayDevice.cs" />
+    <None Include="Models\FanDevice.cs" />
+    <None Include="Models\DimmerDevice.cs" />
+    <None Include="Models\Device.cs" />
     <Compile Include="Business\SlapsteonDevice.cs" />
     <Compile Include="Business\SlapsteonFacade.cs" />
     <Compile Include="Controllers\HomeController.cs" />
@@ -78,7 +90,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\HtmlHelperExtensions.cs" />
-    <Compile Include="Models\Device.cs" />
+    <Compile Include="Models\DeviceOld.cs" />
     <Compile Include="Models\DeviceList.cs" />
     <Compile Include="Models\Lights.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

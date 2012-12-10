@@ -10,6 +10,8 @@ using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
+using Insteon.Devices;
+using Newtonsoft.Json;
 
 namespace Insteon.Library
 {
@@ -192,6 +194,7 @@ namespace Insteon.Library
         {
             try
             {
+                //return JsonConvert.SerializeObject(_handler.AllDevices.Values.ToList(), Formatting.Indented, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
                 return _handler.AllDevices.Values.ToArray();
             }
             catch (Exception ex)

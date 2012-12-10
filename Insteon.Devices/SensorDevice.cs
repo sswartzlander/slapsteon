@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
     [DataContract]
     public class SensorDevice : Device

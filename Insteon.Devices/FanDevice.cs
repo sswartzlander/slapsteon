@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
     [DataContract]
-    class FanDevice : DimmerDevice
+    public class FanDevice : DimmerDevice
     {
         public FanDevice(string deviceName, DeviceAddress deviceAddress) : base(deviceName, deviceAddress) { }
     }

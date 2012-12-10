@@ -7,11 +7,11 @@ namespace Slapsteon.Web.Models
 {
     public class DeviceList
     {
-        public DeviceList(IEnumerable<Device> devices)
+        public DeviceList(IEnumerable<DeviceOld> devices)
         {
             Devices = devices;
         }
 
-        public IEnumerable<Device> Devices { get; private set; }
+        public IEnumerable<DeviceOld> Devices { get; private set; }
     }
 }

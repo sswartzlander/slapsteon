@@ -26,7 +26,7 @@
           <AlwaysStartWebServerOnDebug>True</AlwaysStartWebServerOnDebug>
           <UseIIS>False</UseIIS>
           <AutoAssignPort>False</AutoAssignPort>
-          <DevelopmentServerPort>50984</DevelopmentServerPort>
+          <DevelopmentServerPort>50983</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>http://localhost:50984/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>

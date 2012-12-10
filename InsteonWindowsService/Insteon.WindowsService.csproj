@@ -67,6 +67,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Insteon.Devices\Insteon.Devices.csproj">
+      <Project>{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}</Project>
+      <Name>Insteon.Devices</Name>
+    </ProjectReference>
     <ProjectReference Include="..\InsteonLibrary\Insteon.Library.csproj">
       <Project>{972ABBAF-A8B4-4F8E-9DD0-E49C167D4FAB}</Project>
       <Name>Insteon.Library</Name>

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ServiceModel;
 using System.ServiceModel.Web;
+using Insteon.Devices;
 
 namespace Insteon.Library
 {
@@ -55,7 +56,7 @@ namespace Insteon.Library
         void Level1Alert();
 
         [OperationContract]
-        [WebGet(UriTemplate = "/GetDevices2", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        [WebGet(UriTemplate = "/GetDevices2", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Bare)]
         Device[] GetDevices2();
     }
 }

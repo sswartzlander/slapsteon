@@ -11,6 +11,7 @@ using Insteon.Library;
 using System.Threading;
 using log4net;
 using System.Configuration;
+using Insteon.Devices;
 
 namespace Slapsteon.UI
 {

@@ -13,6 +13,7 @@ using System.IO.Ports;
 using System.Configuration;
 using System.Runtime.InteropServices;
 using log4net;
+using Insteon.Devices;
 
 namespace Insteon.WindowsService
 {
@@ -164,7 +165,7 @@ namespace Insteon.WindowsService
         {
             try
             {
-                Device coachLights = _allDevices.FirstOrDefault(d => d.Name == "coachLights");
+                Device coachLights = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "coachLights");
 
                 if (null != coachLights)
                 {
@@ -210,7 +211,7 @@ namespace Insteon.WindowsService
                     }
                 }
 
-                Device frontDoorHigh = _allDevices.FirstOrDefault(d => d.Name == "frontDoorHigh");
+                Device frontDoorHigh = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "frontDoorHigh");
                 if (null != frontDoorHigh)
                 {
                     if (frontDoorHigh.Status != 1)

@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using Slapsteon.Web.Models;
 using Slapsteon.Web.Business;
+using Insteon.Devices;
 
 namespace Slapsteon.Web.Controllers
 {
@@ -25,13 +26,13 @@ namespace Slapsteon.Web.Controllers
             List<SlapsteonDevice> devices = (new SlapsteonFacade()).GetDevices();
 
 
-            List<Device> deviceList = new List<Device>();
+            List<DeviceOld> deviceList = new List<DeviceOld>();
 
             foreach (SlapsteonDevice dev in devices)
             {
                 int level;
                 int.TryParse(dev.Status, out level);
-                Device device = new Device();
+                DeviceOld device = new DeviceOld();
                 device.Address = dev.Address;
                 device.Status = level;
                 device.Name = dev.Name;
@@ -48,12 +49,19 @@ namespace Slapsteon.Web.Controllers
             return DeviceListView(deviceListModel);
         }
 
+        public ActionResult List2()
+        {
+            List<Device> devices = (new SlapsteonFacade()).GetDevices2();
+
+            return new EmptyResult();
+        }
+
         private ActionResult DeviceListView(DeviceList deviceListModel)
         {
             return View("List", deviceListModel);
         }
 
-        public ActionResult On(Device device)
+        public ActionResult On(DeviceOld device)
         {
             SlapsteonFacade facade = new SlapsteonFacade();
             facade.On(device.Name);
@@ -77,7 +85,7 @@ namespace Slapsteon.Web.Controllers
             return RedirectToAction("Index", "Home"); 
         }
 
-        public ActionResult Off(Device device)
+        public ActionResult Off(DeviceOld device)
         {
             SlapsteonFacade facade = new SlapsteonFacade();
             facade.Off(device.Name);

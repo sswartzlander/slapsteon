@@ -9,6 +9,7 @@ using Insteon.Library.Configuration;
 using System.Configuration;
 using System.Xml.Serialization;
 using System.IO;
+using Insteon.Devices;
 
 namespace Insteon.Library
 {
@@ -367,7 +368,7 @@ namespace Insteon.Library
                     if (sourceDevice.DefaultOffMinutes.HasValue)
                     {
                         log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
-                        sourceDevice.SetTimer(this);
+                        sourceDevice.SetTimer(new Devices.DeviceTimerCallBack(DeviceTimerCallBack));
                     }
 
                     commandType = "FastOn";
@@ -401,7 +402,7 @@ namespace Insteon.Library
                     if (sourceDevice.DefaultOffMinutes.HasValue)
                     {
                         log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
-                        sourceDevice.SetTimer(this);
+                        sourceDevice.SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
                     }
 
 
@@ -431,7 +432,7 @@ namespace Insteon.Library
                     if (sourceDevice.DefaultOffMinutes.HasValue)
                     {
                         log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
-                        sourceDevice.SetTimer(this);
+                        sourceDevice.SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
                     }
 
                     if (sourceDevice.Name == "zone1IOLinc")
@@ -585,7 +586,7 @@ namespace Insteon.Library
 
             // set timers
             if (sourceDevice.DefaultOffMinutes.HasValue)
-                sourceDevice.SetTimer(this);
+                sourceDevice.SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
 
             // if we're turning a light on via API, arm any timers, update KPL buttons, etc
             foreach (string i in _allDevices.Keys)
@@ -720,7 +721,7 @@ namespace Insteon.Library
                                 }
 
                                 if ((command1 == Constants.STD_COMMAND_FAST_ON || command1 == Constants.STD_COMMAND_ON) && _allDevices[i].DefaultOffMinutes.HasValue)
-                                    _allDevices[i].SetTimer(this);
+                                    _allDevices[i].SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
 
                             }
                         }
@@ -1391,7 +1392,13 @@ namespace Insteon.Library
                 }
             }
         }
+
+        private void DeviceTimerCallBack(Device device)
+        {
+            this.SendStandardCommand(device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+            this.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, device);
+        }
     }
 
-    
+   
 }

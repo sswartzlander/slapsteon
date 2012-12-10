@@ -5,21 +5,21 @@ using System.Text;
 using System.Timers;
 using log4net;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
     public class LightOffTimer
     {
         private Device _device;
         private TimeSpan _duration;
-        private InsteonHandler _handler;
+        private DeviceTimerCallBack _timerCallback;
         private Timer _lightTimer;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
 
-        public LightOffTimer(Device device, TimeSpan duration, InsteonHandler handler) 
+        public LightOffTimer(Device device, TimeSpan duration, DeviceTimerCallBack timerCallback) 
         {
             _device = device;
             _duration = duration;
-            _handler = handler;
+            _timerCallback = timerCallback;
 
             _lightTimer = new Timer(_duration.TotalMilliseconds);
         }
@@ -39,8 +39,6 @@ namespace Insteon.Library
 
         void lightTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            _handler.SendStandardCommand(_device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
-            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, _device);
             _lightTimer.Dispose();
         }
     }

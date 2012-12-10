@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Insteon.Library
+namespace Insteon.Devices
 {
     [DataContract]
     public class RelayDevice : Device

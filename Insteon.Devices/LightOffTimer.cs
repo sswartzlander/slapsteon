@@ -39,6 +39,7 @@ namespace Insteon.Devices
 
         void lightTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            _timerCallback(_device);
             _lightTimer.Dispose();
         }
     }

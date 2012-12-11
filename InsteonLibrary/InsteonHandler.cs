@@ -112,6 +112,8 @@ namespace Insteon.Library
                 else
                     dev = new RelayDevice(deviceName, deviceAddress);
 
+                dev.DefaultOffMinutes = element.DefaultOffMinutes;
+
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
 
@@ -584,10 +586,6 @@ namespace Insteon.Library
         {
             log.InfoFormat("Processing related device events for 0x{0} for device {1}", command1.ToString("X"), sourceDevice.Name);
 
-            // set timers
-            if (sourceDevice.DefaultOffMinutes.HasValue)
-                sourceDevice.SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
-
             // if we're turning a light on via API, arm any timers, update KPL buttons, etc
             foreach (string i in _allDevices.Keys)
             {
@@ -616,6 +614,13 @@ namespace Insteon.Library
                     {
                         // only need to worry about group 1 since this is sent from single group devices...
                         if (record.Group != 0x01) continue;
+
+                        // set timers
+                        if (_allDevices[i].DefaultOffMinutes.HasValue && (command1 == Constants.STD_COMMAND_FAST_ON || command1 == Constants.STD_COMMAND_ON))
+                        {
+                            log.InfoFormat("Setting off timer for responder {0} for {1} minutes", _allDevices[i].Name, _allDevices[i].DefaultOffMinutes.Value);
+                            _allDevices[i].SetTimer(new DeviceTimerCallBack(DeviceTimerCallBack));
+                        }
 
                         // local data says what button to turn off
                         byte flipMask = 0xFF;

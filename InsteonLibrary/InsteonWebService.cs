@@ -233,7 +233,7 @@ namespace Insteon.Library
             if (null == dev)
                 return;
 
-            byte byteLevel = (byte)(int)(levelValue * 2.55);
+            byte byteLevel = (byte)(levelValue * 255 / 100);
 
             dev.Status = levelValue;
             dev.LastOn = DateTime.Now;
@@ -270,8 +270,8 @@ namespace Insteon.Library
             // command2 is brightness & ramp rate... all in 1 byte... 
             // so there are only 16 possible increments of each
 
-            byte brighthessByte = (byte)((byte)(int)(levelValue / 6.25) << 4);
-            byte rampRateByte = (byte)(int)(rateValue / 6.25);
+            byte brighthessByte = (byte)((byte)(levelValue * 100 / 625) << 4);
+            byte rampRateByte = (byte)(rateValue  * 100 / 625);
 
             log.Debug(string.Format("Calling Ramp On, Level: {0} (0x{1}), Rate: {2}(0x{3})", levelValue, brighthessByte.ToString("X"), rateValue, rampRateByte.ToString("X").PadRight(2,'0')));
             byte command2 = (byte)(brighthessByte | rampRateByte);
@@ -315,7 +315,7 @@ namespace Insteon.Library
             dev.Status = 0;
             dev.LastOff = DateTime.Now;
 
-            byte rampRateByte = (byte)(int)(rateValue / 6.25);
+            byte rampRateByte = (byte)(rateValue * 100 / 625);
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampRateByte, 0x07);
             _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_OFF, dev);

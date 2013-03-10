@@ -12,6 +12,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using Insteon.Devices;
 using Newtonsoft.Json;
+using System.ServiceModel.Channels;
 
 namespace Insteon.Library
 {
@@ -32,8 +33,6 @@ namespace Insteon.Library
         {
             _handler = handler;
         }
-
-   
 
         public void Alarm(string x, string y)
         {
@@ -195,7 +194,7 @@ namespace Insteon.Library
             try
             {
                 //return JsonConvert.SerializeObject(_handler.AllDevices.Values.ToList(), Formatting.Indented, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
-                return _handler.AllDevices.Values.ToArray();
+                return _handler.AllDevices.Values.Where(d => !d.IsSlaveDevice).ToArray();
             }
             catch (Exception ex)
             {
@@ -205,7 +204,18 @@ namespace Insteon.Library
             return null;
         }
 
+        public string Devices3()
+        {
+            return JsonConvert.SerializeObject(_handler.AllDevices.Values.Where(d=>!d.IsSlaveDevice).ToList(), new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All});
+
+        }
+
         public void FastOn(string device)
+        {
+            FastOnWeb(device, GetClientIPAddress());
+        }
+
+        public void FastOnWeb(string device, string ip)
         {
             Device dev = GetDevice(device);
 
@@ -215,11 +225,18 @@ namespace Insteon.Library
             dev.Status = 100;
             dev.LastOn = DateTime.Now;
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Turned on API {0}", ip)));
 
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x07);
         }
 
         public void On(string device, string level)
+        {
+            OnWeb(device, level, GetClientIPAddress());
+        }
+
+        public void OnWeb(string device, string level, string ip)
         {
             int levelValue;
             if (!int.TryParse(level, out levelValue))
@@ -238,11 +255,19 @@ namespace Insteon.Library
             dev.Status = levelValue;
             dev.LastOn = DateTime.Now;
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Turned on to {0}% by API {1}", level, ip)));
+
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x07);
             _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_ON, dev);
         }
 
         public void RampOn(string device, string level, string rate)
+        {
+            RampOnWeb(device, level, rate, GetClientIPAddress());
+        }
+
+        public void RampOnWeb(string device, string level, string rate, string ip)
         {
             int levelValue;
             if (!int.TryParse(level, out levelValue))
@@ -267,6 +292,10 @@ namespace Insteon.Library
             dev.Status = levelValue;
             dev.LastOn = DateTime.Now;
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Ramped on to {0}% at rate {1} by API {2}", level, rate, GetClientIPAddress())));
+
+
             // command2 is brightness & ramp rate... all in 1 byte... 
             // so there are only 16 possible increments of each
 
@@ -282,6 +311,11 @@ namespace Insteon.Library
 
         public void Off(string device)
         {
+            OffWeb(device, GetClientIPAddress());
+        }
+
+        public void OffWeb(string device, string ip)
+        {
             Device dev = GetDevice(device);
 
             if (null == dev)
@@ -290,12 +324,20 @@ namespace Insteon.Library
             dev.Status = 0;
             dev.LastOff = DateTime.Now;
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Turned off by API {0}", ip)));
+            
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x07);
             _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_OFF, dev);
 
         }
 
         public void RampOff(string device, string rate)
+        {
+            RampOffWeb(device, rate, GetClientIPAddress());
+        }
+
+        public void RampOffWeb(string device, string rate, string ip)
         {
             int rateValue;
             if (!int.TryParse(rate, out rateValue))
@@ -317,11 +359,21 @@ namespace Insteon.Library
 
             byte rampRateByte = (byte)(rateValue * 100 / 625);
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Ramped off at rate {0} by API {1}", rate, ip)));
+
+
+
             _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_LIGHT_RAMP_OFF, rampRateByte, 0x07);
             _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_OFF, dev);
         }
 
         public void On2(string device, string level)
+        {
+            On2Web(device, level, GetClientIPAddress());
+        }
+
+        public void On2Web(string device, string level, string ip)
         {
             int levelValue;
             if (!int.TryParse(level, out levelValue))
@@ -338,8 +390,18 @@ namespace Insteon.Library
             // not sure why the easier computation converts 100 to 0xFE
             byte byteLevel = (byte)(levelValue * 255 / 100);
 
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Turned Fan to {0}% by API {1}", level, ip)));
+
+
+
             _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x1F, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 
+        }
+
+        public SlapsteonEventLogEntry[] Log()
+        {
+            return SlapsteonEventLog.ToArray();
         }
 
         public void Party()
@@ -370,6 +432,26 @@ namespace Insteon.Library
                 log.Error(string.Format("Error occurred playing Alarm: {0}", ex.Message));
                 log.Error(ex.StackTrace);
             }
+        }
+
+        private string GetClientIPAddress()
+        {
+            string clientIP = "0.0.0.0";
+
+            try
+            {
+                OperationContext context = OperationContext.Current;
+                MessageProperties prop = context.IncomingMessageProperties;
+                RemoteEndpointMessageProperty endpoint = prop[RemoteEndpointMessageProperty.Name] as RemoteEndpointMessageProperty;
+                clientIP = endpoint.Address;
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error trying to get client ip address.  Message: {0}\n{1}",
+                    ex.Message, ex.StackTrace);
+            }
+
+            return clientIP;
         }
     }
 }

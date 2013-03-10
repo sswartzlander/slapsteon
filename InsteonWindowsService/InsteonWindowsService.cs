@@ -214,7 +214,7 @@ namespace Insteon.WindowsService
                 Device frontDoorHigh = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "frontDoorHigh");
                 if (null != frontDoorHigh)
                 {
-                    if (frontDoorHigh.Status != 1)
+                    if (frontDoorHigh.Status == 0)
                     {
                         if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 1)
                         {

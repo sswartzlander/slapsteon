@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Web Developer Express 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Slapsteon.Web", "Slapsteon.Web\Slapsteon.Web.csproj", "{47620233-C226-4C64-BA96-751763917178}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insteon.Devices", "Insteon.Devices\Insteon.Devices.csproj", "{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{47620233-C226-4C64-BA96-751763917178}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{47620233-C226-4C64-BA96-751763917178}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{47620233-C226-4C64-BA96-751763917178}.Release|Any CPU.Build.0 = Release|Any CPU
+		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

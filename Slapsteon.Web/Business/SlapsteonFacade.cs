@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Slapsteon.Web.Models;
 using Insteon.Devices;
 using Newtonsoft.Json.Serialization;
+using System.Runtime.Serialization.Json;
 
 namespace Slapsteon.Web.Business
 {
@@ -53,12 +54,9 @@ namespace Slapsteon.Web.Business
                 request.ContentLength = 0;
 
                 WebResponse response = request.GetResponse();
-                string responseString = null;
 
-                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                    responseString = reader.ReadToEnd();
-
-                devArray = JsonConvert.DeserializeObject<Device[]>(responseString, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto});
+                DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(Device[]));
+                devArray = (Device[])serializer.ReadObject(response.GetResponseStream());
                 devices = devArray.ToList();
             }
             catch (Exception ex)

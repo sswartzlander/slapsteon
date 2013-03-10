@@ -58,5 +58,38 @@ namespace Insteon.Library
         [OperationContract]
         [WebGet(UriTemplate = "/GetDevices2", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Bare)]
         Device[] GetDevices2();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/Devices3", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Bare)]
+        string Devices3();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/Log", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Bare)]
+        SlapsteonEventLogEntry[] Log();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/OffW/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void OffWeb(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/OnW/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void FastOnWeb(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/OnW/{level}/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void OnWeb(string device, string level, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/OnW/{level}/{rate}/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void RampOnWeb(string device, string level, string rate, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/OffW/{rate}/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void RampOffWeb(string device, string rate, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/On2W/{level}/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void On2Web(string device, string level, string ip);
+
     }
 }

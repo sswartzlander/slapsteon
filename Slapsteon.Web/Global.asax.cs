@@ -35,8 +35,7 @@ namespace Slapsteon.Web
 
         protected void Application_Start()
         {
-            AreaRegistration.RegisterAllAreas();
-
+            WebPageHttpHandler.RegisterExtension("cshtml");
             RegisterRoutes(RouteTable.Routes);
         }
     }

@@ -85,7 +85,7 @@ namespace Insteon.Devices
         [DataMember]
         public string AddressString
         {
-            get { return Address.ToString(); }
+            get { return Address != null ? Address.ToString() : null; }
             set { ;}
 
         }
@@ -103,5 +103,7 @@ namespace Insteon.Devices
                 _slaveDevices = value;
             }
         }
+
+        public bool IsSlaveDevice { get; set; }
     }
 }

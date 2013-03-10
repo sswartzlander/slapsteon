@@ -137,6 +137,7 @@ namespace Insteon.Library
 
                     if (null == slaveDevice)
                         continue;
+                    slaveDevice.IsSlaveDevice = true;
 
                     slaveDevices.Add(slaveDevice);
                 }
@@ -352,22 +353,36 @@ namespace Insteon.Library
                     commandType = "Dim";
                     break;
                 case Constants.STD_COMMAND_FAST_OFF:
-                    if (null != sourceDevice)
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 0;
-                        sourceDevice.LastOff = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.Status = 0;
+                            sourceDevice.LastOff = DateTime.Now;
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                string.Format("Fast off by keypress.")));
+                        }
                     }
 
                     commandType = "FastOff";
                     break;
                 case Constants.STD_COMMAND_FAST_ON:
-                    if (null != sourceDevice)
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 100;
-                        sourceDevice.LastOn = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.LastOn = DateTime.Now;
+                            if (sourceDevice is DimmerDevice)
+                                sourceDevice.Status = (command2 * 100) / 0xFF;
+                            else
+                                sourceDevice.Status = 100;
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                string.Format("Fast on by keypress.")));
+                        }
                     }
 
-                    if (sourceDevice.DefaultOffMinutes.HasValue)
+                    // setting a timer on an ack message is redundant
+                    if (sourceDevice.DefaultOffMinutes.HasValue && ((flag & FlagsAck.ACKDirectMessage)!= FlagsAck.ACKDirectMessage))
                     {
                         log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
                         sourceDevice.SetTimer(new Devices.DeviceTimerCallBack(DeviceTimerCallBack));
@@ -386,19 +401,28 @@ namespace Insteon.Library
                     commandType = "LightManualOn";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_OFF:
-                    if (null != sourceDevice)
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 0;
-                        sourceDevice.LastOff = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.Status = 0;
+                            sourceDevice.LastOff = DateTime.Now;
+                        }
                     }
 
                     commandType = "LightRampOff";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_ON:
-                    if (null != sourceDevice)
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 100;
-                        sourceDevice.LastOn = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.LastOn = DateTime.Now;
+                            if (sourceDevice is DimmerDevice)
+                                sourceDevice.Status = (command2 * 100) / 0xFF;
+                            else
+                                sourceDevice.Status = 100;
+                        }
                     }
 
                     if (sourceDevice.DefaultOffMinutes.HasValue)
@@ -416,19 +440,34 @@ namespace Insteon.Library
                     break;
 
                 case Constants.STD_COMMAND_OFF:
-                    if (null != sourceDevice)
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 0;
-                        sourceDevice.LastOff = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.Status = 0;
+                            sourceDevice.LastOff = DateTime.Now;
+
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                  string.Format("Turned off by keypress.")));
+                        }
                     }
                     commandType = "CommandOff";
                     break;
                 case Constants.STD_COMMAND_ON:
-                    
-                    if (null != sourceDevice)
+
+                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
                     {
-                        sourceDevice.Status = 100;
-                        sourceDevice.LastOn = DateTime.Now;
+                        if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
+                        {
+                            sourceDevice.LastOn = DateTime.Now;
+                            if (sourceDevice is DimmerDevice)
+                                sourceDevice.Status = (command2 * 100) / 0xFF;
+                            else
+                                sourceDevice.Status = 100;
+
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                string.Format("Turned on by keypress.")));
+                        }
                     }
 
                     if (sourceDevice.DefaultOffMinutes.HasValue)
@@ -1476,6 +1515,10 @@ namespace Insteon.Library
 
         private void DeviceTimerCallBack(Device device)
         {
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(device.Name,
+                string.Format("Turned off by timer.")));
+
+
             this.SendStandardCommand(device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
             this.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, device);
         }

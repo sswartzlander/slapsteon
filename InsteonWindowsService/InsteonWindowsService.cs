@@ -14,6 +14,7 @@ using System.Configuration;
 using System.Runtime.InteropServices;
 using log4net;
 using Insteon.Devices;
+using System.IO;
 
 namespace Insteon.WindowsService
 {
@@ -26,7 +27,9 @@ namespace Insteon.WindowsService
         private static SerialPort _plm;
         public static SerialPort PLM { get { return _plm; } }
         private bool _stop = false;
+        private Process _iisProcess = null;
         private Thread _wcfHostThread;
+        private Thread _iisExpressThread;
         private SERVICE_STATUS _serviceStatus;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
         private List<Device> _allDevices = new List<Device>();
@@ -75,8 +78,12 @@ namespace Insteon.WindowsService
 
                 Thread serviceStartThread = new Thread(delegate()
                 {
+                    // ive confused myself a little while im running 2 versions of these threads
                     _wcfHostThread = new Thread(new ThreadStart(HostService));
                     _wcfHostThread.Start();
+
+                    _iisExpressThread = new Thread(new ThreadStart(RunIISExpress));
+                    _iisExpressThread.Start();
 
                     SetServiceState(State.SERVICE_RUNNING);
 
@@ -110,6 +117,16 @@ namespace Insteon.WindowsService
         {
             SetServiceState(State.SERVICE_STOP_PENDING);
 
+            if (null != _iisProcess)
+            {
+                log.Info("Killing IIS process.");
+                try
+                {
+                    _iisProcess.Kill();
+                }
+                catch (Exception) { }
+            }
+
             _stop = true;
 
             if (null != _plm)
@@ -125,6 +142,79 @@ namespace Insteon.WindowsService
             _serviceStatus.currentState = (int)state;
 
             SetServiceStatus(handle, ref _serviceStatus);
+        }
+
+        private void RunIISExpress()
+        {
+            try
+            {
+                Thread iisHostThread = new Thread(delegate()
+                {
+                    log.Info("About to start IIS process");
+                    StreamReader error = null;
+                    StreamReader outputReader = null;
+                    string errorOutput = "";
+                    string output = "";
+                    try
+                    {
+                        _iisProcess = new Process
+                        {
+                            EnableRaisingEvents = false,
+                            StartInfo =
+                            {
+                                FileName = @"C:\Program Files\IIS Express\iisexpress.exe",
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true,
+                                Verb = "runas"
+                            }
+                        };
+
+                        _iisProcess.Start();
+
+                        log.InfoFormat("Started iis process {0}", _iisProcess.Id);
+
+                        error = _iisProcess.StandardError;
+                        outputReader = _iisProcess.StandardOutput;
+
+                        output = outputReader.ReadToEnd();
+                        errorOutput = error.ReadToEnd();
+
+                        _iisProcess.WaitForExit();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.ErrorFormat("Error occurred starting iis. Message: {0}, trace: {1}", ex.Message, ex.StackTrace);
+                    }
+                    finally
+                    {
+                        if (null != error)
+                        {
+                            error.Close();
+                            error.Dispose();
+                        }
+                    }
+
+                    if (_iisProcess.ExitCode == 0)
+                    {
+                        log.ErrorFormat("IIS Express process exited cleanly.");
+
+                    }
+                    else
+                    {
+                        log.ErrorFormat("IIS Express process exited with code {0}.  Output: {1}, Error: {2}", _iisProcess.ExitCode, output, errorOutput);
+
+                    }
+                });
+
+                iisHostThread.Start();
+                iisHostThread.Join();
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Error occurred in IIS host thread: {0}, {1}", ex.Message, ex.StackTrace);
+            }
         }
 
         private void HostService()
@@ -194,6 +284,8 @@ namespace Insteon.WindowsService
                             coachLights.Status = 1;
                             coachLights.LastOn = DateTime.Now;
                             log.Info(string.Format("Turned coach lights on at {0}.  Sunset Timespan: {1}, Sunset Decimal: {2}", DateTime.Now, sunsetTimeSpan.ToString(), sunset));
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(coachLights.Name,
+                                string.Format("Turned on at sunset")));
                             Thread.Sleep(500);
                         }
                     }
@@ -206,6 +298,8 @@ namespace Insteon.WindowsService
                             coachLights.Status = 0;
                             coachLights.LastOff = DateTime.Now;
                             log.Info(string.Format("Turned coach lights off at {0}.  Sunrise Timespan: {1}, Sunrise Decimal: {2}", DateTime.Now, sunriseTimeSpan.ToString(), sunrise));
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(coachLights.Name,
+                                string.Format("Turned off at sunrise")));
                             Thread.Sleep(500);
                         }
                     }
@@ -233,6 +327,33 @@ namespace Insteon.WindowsService
                             frontDoorHigh.Status = 0;
                             frontDoorHigh.LastOff = DateTime.Now;
                             log.Info(string.Format("Turned front door high light off at {0}", DateTime.Now));
+                            Thread.Sleep(500);
+                        }
+                    }
+                }
+
+                Device backyard = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "backyard");
+                if (null != backyard)
+                {
+                    if (backyard.Status == 0)
+                    {
+                        if (DateTime.Now.Hour >= 22 || DateTime.Now.Hour < 6)
+                        {
+                            _insteonWebService.FastOn("backyard");
+                            backyard.Status = 1;
+                            backyard.LastOn = DateTime.Now;
+                            log.Info(string.Format("Turned backyard light on at {0}", DateTime.Now));
+                            Thread.Sleep(500);
+                        }
+                    }
+                    else
+                    {
+                        if (DateTime.Now.Hour >= 6 && DateTime.Now.Hour < 22)
+                        {
+                            _insteonWebService.Off("backyard");
+                            backyard.Status = 0;
+                            backyard.LastOff = DateTime.Now;
+                            log.Info(string.Format("Turned backyard light off at {0}", DateTime.Now));
                             Thread.Sleep(500);
                         }
                     }

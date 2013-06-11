@@ -462,11 +462,18 @@ namespace Insteon.Library
                             sourceDevice.LastOn = DateTime.Now;
                             if (sourceDevice is DimmerDevice)
                                 sourceDevice.Status = (command2 * 100) / 0xFF;
+                            else if (sourceDevice is SensorDevice)
+                                sourceDevice.Status = 0;// dont actually turn on
                             else
                                 sourceDevice.Status = 100;
 
-                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
-                                string.Format("Turned on by keypress.")));
+
+                            if (sourceDevice is SensorDevice)
+                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                    string.Format("Motion Detected")));
+                            else
+                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                    string.Format("Turned on by keypress.")));
                         }
                     }
 
@@ -1518,7 +1525,8 @@ namespace Insteon.Library
             SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(device.Name,
                 string.Format("Turned off by timer.")));
 
-
+            device.Status = 0;
+            device.LastOff = DateTime.Now;
             this.SendStandardCommand(device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
             this.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, device);
         }

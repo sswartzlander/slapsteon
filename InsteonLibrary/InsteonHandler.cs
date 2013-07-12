@@ -309,8 +309,8 @@ namespace Insteon.Library
                     if (_gettingOpFlags)
                     {
                         delta = message[10];
-
                         sourceDevice.Delta = delta;
+                        log.InfoFormat("Attempting to read database delta from ops flags, result: {0}", delta);
                     }
                     else
                     {
@@ -1005,7 +1005,7 @@ namespace Insteon.Library
                     command[2] = deviceAddress.Byte1;
                     command[3] = deviceAddress.Byte2;
                     command[4] = deviceAddress.Byte3;
-                    command[5] = 0xF;
+                    command[5] = 0x0F;
                     command[6] = Constants.STD_COMMAND_GET_OP_FLAGS;
                     command[7] = 0x01;
                     _plm.Write(command, 0, 8);

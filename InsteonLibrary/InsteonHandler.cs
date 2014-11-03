@@ -113,6 +113,8 @@ namespace Insteon.Library
                     dev = new RelayDevice(deviceName, deviceAddress);
 
                 dev.DefaultOffMinutes = element.DefaultOffMinutes;
+                dev.IsOnAtSunset = element.IsOnAtSunset ?? false;
+                dev.IsOffAtSunrise = element.IsOffAtSunrise ?? false;
 
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }

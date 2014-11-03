@@ -113,5 +113,19 @@ namespace Insteon.Library.Configuration
             get { return this["isIODevice"] as bool?; }
             set { this["isIODevice"] = value; }
         }
+
+        [ConfigurationProperty("isOnAtSunset", DefaultValue = false)]
+        public bool? IsOnAtSunset
+        {
+            get { return this["isOnAtSunset"] as bool?; }
+            set { this["isOnAtSunset"] = value; }
+        }
+
+        [ConfigurationProperty("isOffAtSunrise", DefaultValue = false)]
+        public bool? IsOffAtSunrise
+        {
+            get { return this["isOffAtSunrise"] as bool?; }
+            set { this["isOffAtSunrise"] = value; }
+        }
     }
 }

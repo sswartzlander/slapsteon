@@ -105,5 +105,8 @@ namespace Insteon.Devices
         }
 
         public bool IsSlaveDevice { get; set; }
+
+        public bool IsOnAtSunset { get; set; }
+        public bool IsOffAtSunrise { get; set; }
     }
 }

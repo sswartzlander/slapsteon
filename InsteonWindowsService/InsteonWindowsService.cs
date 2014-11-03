@@ -32,9 +32,11 @@ namespace Insteon.WindowsService
         private Thread _iisExpressThread;
         private SERVICE_STATUS _serviceStatus;
         private static readonly ILog log = LogManager.GetLogger("Insteon");
-        private List<Device> _allDevices = new List<Device>();
         private List<Device> _randomDevices = new List<Device>();
-        
+
+        private DateTime? _lastSunrise = null;
+        private DateTime? _lastSunset = null;
+
         private InsteonHandler _handler;
 
         private double _latitude;
@@ -62,11 +64,11 @@ namespace Insteon.WindowsService
 
                 string latString = ConfigurationManager.AppSettings["Latitude"];
                 if (!double.TryParse(latString, out _latitude))
-                    _latitude = 29.548;
+                    _latitude =35.773;
 
                 string longitudeString = ConfigurationManager.AppSettings["Longitude"];
                 if (!double.TryParse(longitudeString, out _longitude))
-                    _longitude = -98.5342;
+                    _longitude = -78.888893;
 
                 SetServiceState(State.SERVICE_START_PENDING);
 
@@ -75,6 +77,19 @@ namespace Insteon.WindowsService
                 _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(_handler_InsteonTrafficDetected);
                 _handler.PartyDetected += new InsteonHandler.PartyHandler(_handler_PartyDetected);
 
+                //log.InfoFormat("Setting up random devices, handler has {0} devices", _handler.AllDevices.Count);
+
+                //if (_handler.AllDevices.ContainsKey("22AEB1")) // entry
+                //    _randomDevices.Add(_handler.AllDevices["22AEB1"]);
+                //if (_handler.AllDevices.ContainsKey("1FB523")) // stairs
+                //    _randomDevices.Add(_handler.AllDevices["1FB523"]);
+                //if (_handler.AllDevices.ContainsKey("192A4D")) // kitchen multi
+                //    _randomDevices.Add(_handler.AllDevices["192A4D"]);
+                //if (_handler.AllDevices.ContainsKey("1BBECC")) // living room
+                //    _randomDevices.Add(_handler.AllDevices["1BBECC"]);
+                //if (_handler.AllDevices.ContainsKey("22A60C")) // front bedroom
+                //    _randomDevices.Add(_handler.AllDevices["22A60C"]);
+                //log.InfoFormat("Finished adding {0} random devices.", _randomDevices.Count);
 
                 Thread serviceStartThread = new Thread(delegate()
                 {
@@ -257,166 +272,180 @@ namespace Insteon.WindowsService
             {
                 Device coachLights = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "coachLights");
 
-                if (null != coachLights)
+                SolarTime solarTime = new SolarTime();
+                TimeZoneInfo timezone = TimeZoneInfo.Local;
+                double sunrise = solarTime.CalculateSunriseOrSunset(true, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
+
+                int sunriseHour = (int)Math.Floor(sunrise / 60);
+                int sunriseMinute = (int)Math.Floor(sunrise - (60 * sunriseHour));
+                int sunriseSeconds = (int)(60.0 * ((double)sunrise - Math.Floor(sunrise)));
+
+                double sunset = solarTime.CalculateSunriseOrSunset(false, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
+                int sunsetHour = (int)Math.Floor(sunset / 60);
+                int sunsetMinute = (int)Math.Floor(sunset - (60 * sunsetHour));
+                int sunsetSecond = (int)(60.0 * ((double)sunset - Math.Floor(sunset)));
+
+                TimeSpan sunriseTimeSpan = new TimeSpan(sunriseHour, sunriseMinute, sunriseSeconds);
+                TimeSpan sunsetTimeSpan = new TimeSpan(sunsetHour, sunsetMinute, sunsetSecond);
+                bool processSunset = !(_lastSunset.HasValue && _lastSunset.Value.AddHours(20) > DateTime.Now);
+                bool processSunrise = !(_lastSunrise.HasValue && _lastSunrise.Value.AddHours(20) > DateTime.Now);
+
+                if (processSunset && (DateTime.Now.TimeOfDay >= sunsetTimeSpan || DateTime.Now.TimeOfDay < sunriseTimeSpan))
                 {
-                    SolarTime solarTime = new SolarTime();
-                    TimeZoneInfo timezone = TimeZoneInfo.Local;
-                    double sunrise = solarTime.CalculateSunriseOrSunset(true, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
-                    double sunset = solarTime.CalculateSunriseOrSunset(false, _latitude, _longitude, timezone.BaseUtcOffset.Hours, timezone.IsDaylightSavingTime(DateTime.Now));
+                    _lastSunset = DateTime.Now;
 
-                    int sunriseHour = (int)Math.Floor(sunrise / 60);
-                    int sunriseMinute = (int)Math.Floor(sunrise - (60 * sunriseHour));
-                    int sunriseSeconds = (int)(60.0 * ((double)sunrise - Math.Floor(sunrise)));
-
-                    int sunsetHour = (int)Math.Floor(sunset / 60);
-                    int sunsetMinute = (int)Math.Floor(sunset - (60 * sunsetHour));
-                    int sunsetSecond = (int)(60.0 * ((double)sunset - Math.Floor(sunset)));
-
-                    TimeSpan sunriseTimeSpan = new TimeSpan(sunriseHour, sunriseMinute, sunriseSeconds);
-                    TimeSpan sunsetTimeSpan = new TimeSpan(sunsetHour, sunsetMinute, sunsetSecond);
-
-                    if (coachLights.Status != 1)
+                    foreach (string key in _handler.AllDevices.Keys)
                     {
-                        if (DateTime.Now.TimeOfDay >= sunsetTimeSpan || DateTime.Now.TimeOfDay < sunriseTimeSpan)
+                        Device dev = _handler.AllDevices[key];
+
+                        if (dev.IsOnAtSunset)
                         {
-                            _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x0F);
-                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_ON, coachLights);
-                            coachLights.Status = 1;
-                            coachLights.LastOn = DateTime.Now;
-                            log.Info(string.Format("Turned coach lights on at {0}.  Sunset Timespan: {1}, Sunset Decimal: {2}", DateTime.Now, sunsetTimeSpan.ToString(), sunset));
-                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(coachLights.Name,
+                            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_ON, 0x00, 0x0F);
+                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_ON, dev);
+                            dev.Status = 1;
+                            dev.LastOn = DateTime.Now;
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
                                 string.Format("Turned on at sunset")));
                             Thread.Sleep(500);
                         }
                     }
-                    else
+                }
+
+                if (processSunrise && (DateTime.Now.TimeOfDay >= sunriseTimeSpan && DateTime.Now.TimeOfDay < sunsetTimeSpan))
+                {
+                    _lastSunrise = DateTime.Now;
+                    foreach (string key in _handler.AllDevices.Keys)
                     {
-                        if (DateTime.Now.TimeOfDay >= sunriseTimeSpan && DateTime.Now.TimeOfDay < sunsetTimeSpan)
+                        Device dev = _handler.AllDevices[key];
+
+                        if (dev.IsOffAtSunrise)
                         {
-                            _handler.SendStandardCommand(coachLights.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
-                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, coachLights);
-                            coachLights.Status = 0;
-                            coachLights.LastOff = DateTime.Now;
-                            log.Info(string.Format("Turned coach lights off at {0}.  Sunrise Timespan: {1}, Sunrise Decimal: {2}", DateTime.Now, sunriseTimeSpan.ToString(), sunrise));
-                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(coachLights.Name,
+                            _handler.SendStandardCommand(dev.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+                            _handler.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, dev);
+                            dev.Status = 0;
+                            dev.LastOff = DateTime.Now;
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
                                 string.Format("Turned off at sunrise")));
                             Thread.Sleep(500);
                         }
                     }
                 }
 
-                Device frontDoorHigh = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "frontDoorHigh");
-                if (null != frontDoorHigh)
-                {
-                    if (frontDoorHigh.Status == 0)
-                    {
-                        if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 1)
-                        {
-                            _insteonWebService.FastOn("frontdoorHigh");
-                            frontDoorHigh.Status = 1;
-                            frontDoorHigh.LastOn = DateTime.Now;
-                            log.Info(string.Format("Turned front door high light on at {0}", DateTime.Now));
-                            Thread.Sleep(500);
-                        }
-                    }
-                    else
-                    {
-                        if (DateTime.Now.Hour >= 1 && DateTime.Now.Hour < 21)
-                        {
-                            _insteonWebService.Off("frontdoorHigh");
-                            frontDoorHigh.Status = 0;
-                            frontDoorHigh.LastOff = DateTime.Now;
-                            log.Info(string.Format("Turned front door high light off at {0}", DateTime.Now));
-                            Thread.Sleep(500);
-                        }
-                    }
-                }
+                //Device frontDoorHigh = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "frontDoorHigh");
+                //if (null != frontDoorHigh)
+                //{
+                //    if (frontDoorHigh.Status == 0)
+                //    {
+                //        if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 1)
+                //        {
+                //            _insteonWebService.FastOn("frontdoorHigh");
+                //            frontDoorHigh.Status = 1;
+                //            frontDoorHigh.LastOn = DateTime.Now;
+                //            log.Info(string.Format("Turned front door high light on at {0}", DateTime.Now));
+                //            Thread.Sleep(500);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        if (DateTime.Now.Hour >= 1 && DateTime.Now.Hour < 21)
+                //        {
+                //            _insteonWebService.Off("frontdoorHigh");
+                //            frontDoorHigh.Status = 0;
+                //            frontDoorHigh.LastOff = DateTime.Now;
+                //            log.Info(string.Format("Turned front door high light off at {0}", DateTime.Now));
+                //            Thread.Sleep(500);
+                //        }
+                //    }
+                //}
 
-                Device backyard = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "backyard");
-                if (null != backyard)
-                {
-                    if (backyard.Status == 0)
-                    {
-                        if (DateTime.Now.Hour >= 22 || DateTime.Now.Hour < 6)
-                        {
-                            _insteonWebService.FastOn("backyard");
-                            backyard.Status = 1;
-                            backyard.LastOn = DateTime.Now;
-                            log.Info(string.Format("Turned backyard light on at {0}", DateTime.Now));
-                            Thread.Sleep(500);
-                        }
-                    }
-                    else
-                    {
-                        if (DateTime.Now.Hour >= 6 && DateTime.Now.Hour < 22)
-                        {
-                            _insteonWebService.Off("backyard");
-                            backyard.Status = 0;
-                            backyard.LastOff = DateTime.Now;
-                            log.Info(string.Format("Turned backyard light off at {0}", DateTime.Now));
-                            Thread.Sleep(500);
-                        }
-                    }
-                }
-                /*
+                //Device backyard = _handler.AllDevices.Values.FirstOrDefault(d => d.Name == "backyard");
+                //if (null != backyard)
+                //{
+                //    if (backyard.Status == 0)
+                //    {
+                //        if (DateTime.Now.Hour >= 22 || DateTime.Now.Hour < 6)
+                //        {
+                //            _insteonWebService.FastOn("backyard");
+                //            backyard.Status = 1;
+                //            backyard.LastOn = DateTime.Now;
+                //            log.Info(string.Format("Turned backyard light on at {0}", DateTime.Now));
+                //            Thread.Sleep(500);
+                //        }
+                //    }
+                //    else
+                //    {
+                //        if (DateTime.Now.Hour >= 6 && DateTime.Now.Hour < 22)
+                //        {
+                //            _insteonWebService.Off("backyard");
+                //            backyard.Status = 0;
+                //            backyard.LastOff = DateTime.Now;
+                //            log.Info(string.Format("Turned backyard light off at {0}", DateTime.Now));
+                //            Thread.Sleep(500);
+                //        }
+                //    }
+                //}
+
                 // handle random events
-                foreach (Device randomDevice in _randomDevices)
-                {
-                    if (randomDevice.Status == 1 && randomDevice.NextOff < DateTime.Now)
-                    {
-                        _insteonWebService.FastOff(_plm, randomDevice.Address);
-                        randomDevice.Status = 0;
-                        randomDevice.LastOff = DateTime.Now;
-                        log.Info(string.Format("Turned off random device {0} at {1}", randomDevice.Name, DateTime.Now));
-                        Thread.Sleep(500);
+                //foreach (Device randomDevice in _randomDevices)
+                //{
+                //    if (DateTime.Now < new DateTime(2013, 8, 9, 7, 0, 0) || DateTime.Now > new DateTime(2013, 8, 22, 6, 0, 0))
+                //        continue;
 
-                        // turn off partner switch
-                        if (randomDevice.Name == "kitchenMulti")
-                        {
-                            Device kitchenMultiSolo = _allDevices.FirstOrDefault(d => d.Name == "kitchenMultiSolo");
-                            if (null != kitchenMultiSolo)
-                            {
-                                _insteonWebService.FastOff(_plm, kitchenMultiSolo.Address);
-                                kitchenMultiSolo.Status = 0;
-                                kitchenMultiSolo.LastOff = DateTime.Now;
-                                Thread.Sleep(500);
-                            }
-                        }
-                    }
+                //    if (randomDevice.Status == 1 && randomDevice.NextOff < DateTime.Now)
+                //    {
+                //        _insteonWebService.Off(randomDevice.Name);
+                //        randomDevice.Status = 0;
+                //        randomDevice.LastOff = DateTime.Now;
+                //        log.Info(string.Format("Turned off random device {0} at {1}", randomDevice.Name, DateTime.Now));
+                //        Thread.Sleep(500);
 
-                    // only turn lights on at random during the night
-                    if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 5)
-                    {
-                        if (randomDevice.Status != 1)
-                        {
-                            // 2% chance to turn something on
-                            if (_random.Next(1, 100) > 98)
-                            {
-                                int randomDuration = _random.Next(7, 36);
-                                log.Info(string.Format("Decided to turn on device {0} for {1} minutes.", randomDevice.Name, randomDuration));
+                //        // turn off partner switch
+                //        if (randomDevice.Name == "kitchenMulti")
+                //        {
+                //            Device kitchenMultiSolo = _handler.AllDevices["192B89"]; // kitchenMultiSolo
+                //            if (null != kitchenMultiSolo)
+                //            {
+                //                _insteonWebService.Off(kitchenMultiSolo.Name);
+                //                kitchenMultiSolo.Status = 0;
+                //                kitchenMultiSolo.LastOff = DateTime.Now;
+                //                Thread.Sleep(500);
+                //            }
+                //        }
+                //    }
 
-                                randomDevice.NextOff = DateTime.Now.AddMinutes(randomDuration);
+                //    // only turn lights on at random during the night
+                //    if (DateTime.Now.Hour >= 21 || DateTime.Now.Hour < 5)
+                //    {
+                //        if (randomDevice.Status != 1)
+                //        {
+                //            // 2% chance to turn something on
+                //            if (_random.Next(1, 100) > 98)
+                //            {
+                //                int randomDuration = _random.Next(7, 36);
+                //                log.Info(string.Format("Decided to turn on device {0} for {1} minutes.", randomDevice.Name, randomDuration));
 
-                                _insteonWebService.FastOn(_plm, randomDevice.Address);
-                                randomDevice.Status = 1;
-                                randomDevice.LastOn = DateTime.Now;
-                                Thread.Sleep(500);
+                //                randomDevice.NextOff = DateTime.Now.AddMinutes(randomDuration);
 
-                                if ("kitchenMulti" == randomDevice.Name)
-                                {
-                                    Device kitchenMultiSolo = _allDevices.FirstOrDefault(d => d.Name == "kitchenMultiSolo");
-                                    if (null != kitchenMultiSolo)
-                                    {
-                                        _insteonWebService.FastOn(_plm, kitchenMultiSolo.Address);
-                                        kitchenMultiSolo.Status = 1;
-                                        kitchenMultiSolo.LastOn = DateTime.Now;
-                                        Thread.Sleep(500);
-                                    }
-                                }
-                            }
-                        }   
-                    }
-                } */
+                //                _insteonWebService.FastOn(randomDevice.Name);
+                //                randomDevice.Status = 1;
+                //                randomDevice.LastOn = DateTime.Now;
+                //                Thread.Sleep(500);
+
+                //                if ("kitchenMulti" == randomDevice.Name)
+                //                {
+                //                    Device kitchenMultiSolo = _handler.AllDevices["192B89"]; // kitchen multi solo
+                //                    if (null != kitchenMultiSolo)
+                //                    {
+                //                        _insteonWebService.FastOn(kitchenMultiSolo.Name);
+                //                        kitchenMultiSolo.Status = 1;
+                //                        kitchenMultiSolo.LastOn = DateTime.Now;
+                //                        Thread.Sleep(500);
+                //                    }
+                //                }
+                //            }
+                //        }   
+                //    }
+                //} 
             }
             catch (Exception ex)
             {

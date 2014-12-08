@@ -5,7 +5,8 @@ using System.Text;
 
 namespace Insteon.Library
 {
-    public enum FlagsAck
+    [Flags]
+    public enum MessageFlag
     {
         BroadcastMessage = 0x80,
         DirectMessage = 0x00,

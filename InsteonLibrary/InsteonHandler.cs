@@ -30,6 +30,12 @@ namespace Insteon.Library
         private bool _gettingOpFlags = false;
         private object _statusSyncObject = new object();
 
+        private bool _gettingThermostat = false;
+        private bool _gettingTemp = false;
+        private bool _gettingSetPoint = false;
+        private bool _gettingHumidity = false;
+        private bool _gettingThermostatExtended = false;
+
         private string _deviceALDBPath = @"C:\Insteon\DeviceALDB.xml";
         private DateTime _lastALDBRecordTime;
         private bool _aldbFinishedForDevice = false;
@@ -55,7 +61,7 @@ namespace Insteon.Library
             }
         }
 
-        public InsteonHandler(string comPort)
+        public InsteonHandler(string comPort, bool saveALDB)
         {
             // read the configuration file
             SlapsteonConfigurationSection slapsteonConfiguration = 
@@ -102,19 +108,35 @@ namespace Insteon.Library
                 else if (element.IsBatteryDevice.HasValue && element.IsBatteryDevice.Value)
                     dev = new SensorDevice(deviceName, deviceAddress);
                 else if (element.IsFan.HasValue && element.IsFan.Value)
-                    dev = new FanDevice(deviceName, deviceAddress);              
+                    dev = new FanDevice(deviceName, deviceAddress);
                 else if (element.IsDimmable.HasValue && element.IsDimmable.Value)
                     dev = new DimmerDevice(deviceName, deviceAddress);
                 else if (element.IsPLM.HasValue && element.IsPLM.Value)
                     dev = new PLMDevice(deviceName, deviceAddress);
                 else if (element.IsIODevice.HasValue && element.IsIODevice.Value)
                     dev = new IODevice(deviceName, deviceAddress);
+                else if (element.IsThermostat.HasValue && element.IsThermostat.Value)
+                {
+                    int setPoint = 0;
+                    if (!int.TryParse(element.ThermostatSetPoint, out setPoint))
+                    {
+                        setPoint = 70;
+                    }
+                    ThermostatDevice.Mode thermostatMode = ThermostatDevice.Mode.Cooling;
+                    if (element.ThermostatMode == "cool")
+                        thermostatMode = ThermostatDevice.Mode.Cooling;
+                    else
+                        thermostatMode = ThermostatDevice.Mode.Heating;
+
+                    dev = new ThermostatDevice(deviceName, deviceAddress, thermostatMode, setPoint);
+                }
                 else
                     dev = new RelayDevice(deviceName, deviceAddress);
 
                 dev.DefaultOffMinutes = element.DefaultOffMinutes;
                 dev.IsOnAtSunset = element.IsOnAtSunset ?? false;
                 dev.IsOffAtSunrise = element.IsOffAtSunrise ?? false;
+                dev.Floor = element.Floor;
 
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
@@ -158,7 +180,10 @@ namespace Insteon.Library
             Thread.Sleep(300);
             GetALDBForAllDevices();
 
-            SerializeDeviceALDB();
+            if (saveALDB)
+                SerializeDeviceALDB();
+
+            
         }
 
         private byte[] _lastSentCommand;
@@ -254,33 +279,33 @@ namespace Insteon.Library
 
             // check flags for group/device
             byte flagByte = (byte)(message[8] & (byte)0xE0);
-            FlagsAck flag = (FlagsAck)flagByte;
+            MessageFlag flag = (MessageFlag)flagByte;
             string flagDescription = "unknown";
 
             switch (flag)
             {
-                case FlagsAck.DirectMessage:
+                case MessageFlag.DirectMessage:
                     flagDescription = "Direct Message";
                     break;
-                case FlagsAck.ACKDirectMessage:
+                case MessageFlag.ACKDirectMessage:
                     flagDescription = "ACK Direct Message";
                     break;
-                case FlagsAck.ACKGroupCleanupDirectMessage:
+                case MessageFlag.ACKGroupCleanupDirectMessage:
                     flagDescription = "ACK Group Cleanup DM";
                     break;
-                case FlagsAck.BroadcastMessage:
+                case MessageFlag.BroadcastMessage:
                     flagDescription = "Broadcast Message";
                     break;
-                case FlagsAck.GroupBroadcastMessage:
+                case MessageFlag.GroupBroadcastMessage:
                     flagDescription = "Group Broadcast Message";
                     break;
-                case FlagsAck.GroupCleanupDirectMessage:
+                case MessageFlag.GroupCleanupDirectMessage:
                     flagDescription = "Group Cleanup DM";
                     break;
-                case FlagsAck.NAKDirectMessage:
+                case MessageFlag.NAKDirectMessage:
                     flagDescription = "NAK Direct Message";
                     break;
-                case FlagsAck.NAKGroupCleanupDirectMessage:
+                case MessageFlag.NAKGroupCleanupDirectMessage:
                     flagDescription = "NAK Group Cleanup DM";
                     break;
                 default:
@@ -308,26 +333,112 @@ namespace Insteon.Library
                 if (_gettingStatus)
                 {
                     byte delta = 0x00;
-                    if (_gettingOpFlags)
-                    {
-                        delta = message[10];
-                        sourceDevice.Delta = delta;
-                        log.InfoFormat("Attempting to read database delta from ops flags, result: {0}", delta);
-                    }
-                    else
-                    {
+                    //if (_gettingOpFlags)
+                    //{
+                    //    delta = message[10];
+                    //    sourceDevice.Delta = delta;
+                    //    log.InfoFormat("Attempting to read database delta from ops flags, result: {0}", delta);
+                    //}
+                    //else
+                    //{
                         // read the command2 and 1 of the response to get the level as well
 
-                        byte level = message[10];
-                        delta = message[9];
+                    byte level = message[10];
+                    delta = message[9];
 
-                        sourceDevice.Status = ((int)level / 255m) * 100m;
-                        sourceDevice.Delta = delta;
+                    sourceDevice.Status = ((int)level / 255m) * 100m;
+                    sourceDevice.Delta = delta;
 
-                    }
+                    //}
                     _statusEventWaitHandle.Set();
                 }
+                else if (sourceDevice is ThermostatDevice)
+                {
+                    if (_gettingThermostat)
+                    {
+                        if (command1 == 0x6A)
+                        {
+                            if (_gettingTemp)
+                            {
+                                ((ThermostatDevice)sourceDevice).AmbientTemperature = (int)(command2 / 2m);
+                                _gettingTemp = false;
+                            }
+                            else if (_gettingSetPoint)
+                            {
+                                if (((ThermostatDevice)sourceDevice).CurrentMode == ThermostatDevice.Mode.Cooling)
+                                    ((ThermostatDevice)sourceDevice).CoolSetPoint = (int)(command2 / 2m);
+                                else
+                                    ((ThermostatDevice)sourceDevice).HeatSetPoint = (int)(command2 / 2m);
 
+                                _gettingSetPoint = false;
+
+                            }
+                            else if (_gettingHumidity)
+                            {
+                                ((ThermostatDevice)sourceDevice).Humidity = (int)command2;
+
+                                _gettingHumidity = false;
+
+                            }
+                            else
+                                log.WarnFormat("Received thermostat update {0} and unsure of what we requested.", command2.ToString("X"));
+
+                            _statusEventWaitHandle.Set();
+
+                        }
+                        return;
+                    }
+                                   
+                    ThermostatDevice thermostat = sourceDevice as ThermostatDevice;
+
+                    switch (command1)
+                    {
+                        case Constants.STD_COMMAND_THERMOSTAT_STATUS_TEMP:
+                            thermostat.AmbientTemperature =(int)(command2 * 0.5m);
+
+                            log.InfoFormat("Received temperature update: {0}", thermostat.AmbientTemperature);
+                            break;
+                        case Constants.STD_COMMAND_THERMOSTAT_STATUS_HUMIDITY:
+                            thermostat.Humidity = (int)command2;
+                            log.InfoFormat("Received humidity update: {0}", thermostat.Humidity);
+                            break;
+                        case Constants.STD_COMMAND_THERMOSTAT_STATUS_MODE_FAN:
+                            log.InfoFormat("Thermostat mode byte: {0}", command2.ToString("X"));
+                            // extract mode, low byte 0=off,1=heat,2=cool,3=auto,4=program
+                            if ((command2 & 0x0F) == 0x00)
+                                thermostat.CurrentMode = ThermostatDevice.Mode.Off;
+                            else if ((command2 & 0x0F) == 0x01)
+                                thermostat.CurrentMode = ThermostatDevice.Mode.Heating;
+                            else if ((command2 & 0x0F) == 0x02)
+                                thermostat.CurrentMode = ThermostatDevice.Mode.Cooling;
+                            else if ((command2 & 0x0F) == 0x03)
+                                thermostat.CurrentMode = ThermostatDevice.Mode.Auto;
+                            else if ((command2 & 0x0F) == 0x04)
+                                thermostat.CurrentMode = ThermostatDevice.Mode.Program;
+                            else 
+                                log.WarnFormat("Unable to determine mode from status byte: {0}", command2.ToString("X"));
+
+                            // extract fan info, high byte command 2, 0=auto,1=alwayson
+                            if ((command2 & 0xF0) == 0x00)
+                                thermostat.Fan = ThermostatDevice.FanMode.Auto;
+                            else if ((command2 & 0xF0) == 0x10)
+                                thermostat.Fan = ThermostatDevice.FanMode.AlwaysOn;
+                            else
+                                log.WarnFormat("Unable to determine fan from status byte: {0}", command2.ToString("X"));
+                            break;
+                        case Constants.STD_COMMAND_THERMOSTAT_STATUS_COOL_SET:
+                            thermostat.CoolSetPoint = (int)(command2);
+                            log.InfoFormat("Received thermostat cool setpoint update: {0}", thermostat.CoolSetPoint);
+                            break;
+                        case Constants.STD_COMMAND_THERMOSTAT_STATUS_HEAT_SET:
+                            thermostat.HeatSetPoint = (int)(command2);
+                            log.InfoFormat("Received thermostat heat setpoint update: {0}", thermostat.HeatSetPoint);
+                            break;
+                        default:
+                            log.InfoFormat("Unknown message from thermostat device received: {0}", command1.ToString("X"));
+                            break;
+                    }
+                }
 
                 // this is received before the ALDB comes, its part of a sequence of extended messages
                 // but 0x2F as a standard message is LightOffAtRampRate
@@ -355,7 +466,7 @@ namespace Insteon.Library
                     commandType = "Dim";
                     break;
                 case Constants.STD_COMMAND_FAST_OFF:
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -369,7 +480,7 @@ namespace Insteon.Library
                     commandType = "FastOff";
                     break;
                 case Constants.STD_COMMAND_FAST_ON:
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -384,7 +495,7 @@ namespace Insteon.Library
                     }
 
                     // setting a timer on an ack message is redundant
-                    if (sourceDevice.DefaultOffMinutes.HasValue && ((flag & FlagsAck.ACKDirectMessage)!= FlagsAck.ACKDirectMessage))
+                    if (sourceDevice.DefaultOffMinutes.HasValue && ((flag & MessageFlag.ACKDirectMessage) != MessageFlag.ACKDirectMessage))
                     {
                         log.DebugFormat("Setting default off timer for device: {0} minutes.", sourceDevice.DefaultOffMinutes.Value);
                         sourceDevice.SetTimer(new Devices.DeviceTimerCallBack(DeviceTimerCallBack));
@@ -403,7 +514,7 @@ namespace Insteon.Library
                     commandType = "LightManualOn";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_OFF:
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -415,7 +526,7 @@ namespace Insteon.Library
                     commandType = "LightRampOff";
                     break;
                 case Constants.STD_COMMAND_LIGHT_RAMP_ON:
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -442,7 +553,7 @@ namespace Insteon.Library
                     break;
 
                 case Constants.STD_COMMAND_OFF:
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -457,7 +568,7 @@ namespace Insteon.Library
                     break;
                 case Constants.STD_COMMAND_ON:
 
-                    if (null != sourceDevice && (flag & FlagsAck.ACKDirectMessage) == 0)
+                    if (null != sourceDevice && (flag & MessageFlag.ACKDirectMessage) == 0)
                     {
                         if ((null != targetDevice && targetDevice is PLMDevice) || toAddress.Byte3 == 0x01)
                         {
@@ -554,13 +665,50 @@ namespace Insteon.Library
                 byte deviceAddress3 = message[4];
 
                 DeviceAddress deviceAddress = new DeviceAddress(deviceAddress1, deviceAddress2, deviceAddress3);
-                IMultiButtonDevice device = _allDevices[deviceAddress.ToString()] as IMultiButtonDevice;
 
-                // for now just get the button mask...
-                device.KPLButtonMask = message[21];
+                Device device = _allDevices[deviceAddress.ToString()];
+                if (device is IMultiButtonDevice)
+                {
 
-                if (_gettingExtendedStatus)
-                    _extendedGetWaitHandle.Set();
+                    IMultiButtonDevice multiButtonDevice= device as IMultiButtonDevice;
+
+                    // for now just get the button mask...
+                    multiButtonDevice.KPLButtonMask = message[21];
+
+                    if (_gettingExtendedStatus)
+                        _extendedGetWaitHandle.Set();
+                }
+                else if (device is ThermostatDevice){
+                    ThermostatDevice thermostatDevice = device as ThermostatDevice;
+                    // message[11] is data 1
+                    // message[13] and 11 would be local temp high and low
+                    // message[15] = data5 = humidity
+                    // message[16] = data6 = tempoffset
+                    // message[17] = data7 = humidity offset
+                    byte systemMode = message[18];
+                    byte fanMode = message[19];
+
+                    if (fanMode == 0x00)
+                    {
+                        thermostatDevice.Fan = ThermostatDevice.FanMode.Auto;
+                    }
+                    else thermostatDevice.Fan = ThermostatDevice.FanMode.AlwaysOn;
+
+                    if (systemMode == 0x00)
+                        thermostatDevice.CurrentMode = ThermostatDevice.Mode.Off;
+                    else if (systemMode == 0x01)
+                        thermostatDevice.CurrentMode = ThermostatDevice.Mode.Auto;
+                    else if (systemMode == 0x02)
+                        thermostatDevice.CurrentMode = ThermostatDevice.Mode.Heating;
+                    else if (systemMode == 0x03)
+                        thermostatDevice.CurrentMode = ThermostatDevice.Mode.Cooling;
+                    else
+                        thermostatDevice.CurrentMode = ThermostatDevice.Mode.Program;
+
+                    if (_gettingThermostatExtended)
+                        _extendedGetWaitHandle.Set();
+                    
+                }
             }
             catch (Exception ex)
             {
@@ -701,7 +849,7 @@ namespace Insteon.Library
                         log.InfoFormat("Updated Button Mask to {0} for device {1}", kplDevice.KPLButtonMask.ToString("X"), _allDevices[i].Name);
 
                         Thread.Sleep(500);
-                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, record.LocalData2, 0x09, kplDevice.KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                        SendExtendedCommand(_allDevices[i].Address, Constants.EXT_COMMAND_EXTENDED_GET_SET, 0x00, 0x1F, false, record.LocalData2, 0x09, kplDevice.KPLButtonMask, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                     }
                 }
             }
@@ -863,15 +1011,12 @@ namespace Insteon.Library
             return results;
         }
 
-        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
-            byte ud5, byte ud6, byte ud7, byte ud8, byte ud9, byte ud10, byte ud11, byte ud12, byte ud13, byte ud14)
+        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, bool checksum, params byte[] userData)
         {
-            SendExtendedCommand(deviceAddress, command1, command2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8, ud9, ud10,
-                ud11, ud12, ud13, ud14, false);
+            SendExtendedCommand(deviceAddress, command1, command2, flags,checksum, false, userData);
         }
 
-        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, byte ud1, byte ud2, byte ud3, byte ud4,
-            byte ud5, byte ud6, byte ud7, byte ud8, byte ud9, byte ud10, byte ud11, byte ud12, byte ud13, byte ud14, bool isUnknownDevice)
+        public void SendExtendedCommand(DeviceAddress deviceAddress, byte command1, byte command2, byte flags, bool checksum, bool isUnknownDevice, params byte[] userData)
         {
             byte[] command = new byte[22];
 
@@ -879,10 +1024,15 @@ namespace Insteon.Library
             if (!isUnknownDevice && !_allDevices.TryGetValue(deviceAddress.ToString(), out targetDevice))
                 throw new Exception("No known device matched the specified address.");
 
+            if (userData.Length > 14)
+                throw new Exception("Invalid userdata specified");
+
             try
             {
                 lock (this)
                 {
+                    int total = command1 + command2;
+
                     command[0] = 0x02; // Insteon start byte
                     command[1] = 0x62; // Standard Command
                     command[2] = deviceAddress.Byte1;
@@ -891,20 +1041,17 @@ namespace Insteon.Library
                     command[5] = flags |= 0x10; // for standard 0x0F is good
                     command[6] = command1;
                     command[7] = command2;
-                    command[8] = ud1;
-                    command[9] = ud2;
-                    command[10] = ud3;
-                    command[11] = ud4;
-                    command[12] = ud5;
-                    command[13] = ud6;
-                    command[14] = ud7;
-                    command[15] = ud8;
-                    command[16] = ud9;
-                    command[17] = ud10;
-                    command[18] = ud11;
-                    command[19] = ud12;
-                    command[20] = ud13;
-                    command[21] = ud14;
+                    if (null != userData)
+                    {
+                        for (int i = 0; i < userData.Length; i++)
+                        {
+                            command[8 + i] = userData[i];
+                            total += userData[i];
+                        }
+                    }
+                    if (checksum)
+                        command[21] = (byte)((total ^ 0xFF) + 1);
+                    
                     _plm.Write(command, 0, 22);
                     Thread.Sleep(250);
                     log.Info(string.Format("Sent command {0} to device {1}.  (Command2: {2}, Flags: {3})", command1.ToString("X"), null != targetDevice ? targetDevice.Name : "Unknown", command2.ToString("X"), flags.ToString("X")));
@@ -974,6 +1121,81 @@ namespace Insteon.Library
             DeviceStatus status = new DeviceStatus();
             try
             {
+                if (_allDevices[deviceAddress.ToString()] is ThermostatDevice)
+                {
+                    _gettingThermostat = true;
+                    
+                    command[0] = 0x02;
+                    command[1] = 0x62;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
+                    command[5] = 0x0F;
+                    command[6] = Constants.STD_COMMAND_THERMOSTAT_STATUS;
+                    command[7] = 0x00; // temp
+
+                    _gettingTemp = true;
+                    _plm.Write(command, 0, 8);
+
+                    _lastSentCommand = command;
+
+                    _statusEventWaitHandle.Reset();
+                    log.Info("Calling WaitOne on StatusEventWaitHandle for Thermostat Temp");
+                    _statusEventWaitHandle.WaitOne(10000);
+                    log.Info("Completed waiting on temp");
+
+                    Thread.Sleep(300);
+
+
+                    command[0] = 0x02;
+                    command[1] = 0x62;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
+                    command[5] = 0x0F;
+                    command[6] = Constants.STD_COMMAND_THERMOSTAT_STATUS;
+                    command[7] = 0x20; // set point
+
+                    _gettingSetPoint = true;
+                    _plm.Write(command, 0, 8);
+
+                    _lastSentCommand = command;
+
+                    _statusEventWaitHandle.Reset();
+                    log.Info("Calling WaitOne on StatusEventWaitHandle for Thermostat set point");
+                    _statusEventWaitHandle.WaitOne(10000);
+                    log.Info("Completed waiting on set point");
+
+                    Thread.Sleep(300);
+
+                    command[0] = 0x02;
+                    command[1] = 0x62;
+                    command[2] = deviceAddress.Byte1;
+                    command[3] = deviceAddress.Byte2;
+                    command[4] = deviceAddress.Byte3;
+                    command[5] = 0x0F;
+                    command[6] = Constants.STD_COMMAND_THERMOSTAT_STATUS;
+                    command[7] = 0x60; // humidity
+
+                    _gettingHumidity = true;
+                    _plm.Write(command, 0, 8);
+
+                    _lastSentCommand = command;
+
+                    _statusEventWaitHandle.Reset();
+                    log.Info("Calling WaitOne on StatusEventWaitHandle for Thermostat humidity");
+                    _statusEventWaitHandle.WaitOne(10000);
+                    log.Info("Completed waiting on humidity");
+
+                    
+                    Thread.Sleep(300);
+
+                    _gettingThermostat = false;
+
+                    return null;
+                }
+
+
                 // send a get status command
                 command[0] = 0x02;
                 command[1] = 0x62;
@@ -984,48 +1206,26 @@ namespace Insteon.Library
                 command[6] = Constants.STD_COMMAND_STATUS_REQUEST;
                 command[7] = 0x00;
 
+                _gettingStatus = true;
+
                 _plm.Write(command, 0, 8);
 
                 _lastSentCommand = command;
 
-                _gettingStatus = true;
-
                 _statusEventWaitHandle.Reset();
                 log.Info("Calling WaitOne on StatusEventWaitHandle");
                 _statusEventWaitHandle.WaitOne(10000);
-                log.Info("StatusEventWaitHandle reset");
+                log.Info("Completed waiting device status handle");
 
-                // if we get a 0 delta with the status request, send a Get Operating Flags..
-                if (_allDevices[deviceAddress.ToString()].Delta == 0)
-                {
-                    _gettingOpFlags = true;
-                    _statusEventWaitHandle.Reset();
-
-                    command = new byte[8];
-                    command[0] = 0x02;
-                    command[1] = 0x62;
-                    command[2] = deviceAddress.Byte1;
-                    command[3] = deviceAddress.Byte2;
-                    command[4] = deviceAddress.Byte3;
-                    command[5] = 0x0F;
-                    command[6] = Constants.STD_COMMAND_GET_OP_FLAGS;
-                    command[7] = 0x01;
-                    _plm.Write(command, 0, 8);
-
-                    _lastSentCommand = command;
+                    
 
 
-                    log.Info("Re-Calling WaitOne on StatusEventWaitHandle");
-                    _statusEventWaitHandle.WaitOne(10000);
-                    log.Info("Second StatusEventWaitHandle reset");
-                }
 
                 status = new DeviceStatus();
                 status.Delta = _allDevices[deviceAddress.ToString()].Delta;
                 status.OnLevel = Math.Round(_allDevices[deviceAddress.ToString()].Status,1);
 
                 _gettingStatus = false;
-                _gettingOpFlags = false;
             }
             catch (Exception ex)
             {
@@ -1035,6 +1235,11 @@ namespace Insteon.Library
             }
 
             return status;
+        }
+
+        public void RefreshThermostatDevice(DeviceAddress address)
+        {
+
         }
 
         private bool SetMonitorMode()
@@ -1079,7 +1284,7 @@ namespace Insteon.Library
         private void _plm_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             
-            log.Info("Data detected from serial port.");
+            //log.Info("Data detected from serial port.");
             try
             {
                 int bytesToRead = _plm.BytesToRead;
@@ -1087,7 +1292,7 @@ namespace Insteon.Library
                 _plm.Read(bytesRead, 0, bytesToRead);
 
                 string bytesAsString = BytesToString(bytesRead);
-                log.Info(string.Format("{0} bytes read from buffer: {1}", bytesToRead, bytesAsString));
+                //log.Info(string.Format("{0} bytes read from buffer: {1}", bytesToRead, bytesAsString));
 
                 lock (this)
                 {
@@ -1109,6 +1314,8 @@ namespace Insteon.Library
             {
                 try
                 {
+                    InsteonStandardMessage message = null;
+
                     if (_bufferOffset < 2)
                         return;
 
@@ -1154,6 +1361,7 @@ namespace Insteon.Library
                             if (_bufferOffset < 11)
                                 return;
                             command = ExtractCommandFromBuffer(11);
+                            message = CommandBytesToStandardMessage(command);
 
                             ProcessStandardReceivedMessage(command);
                             break;
@@ -1162,7 +1370,7 @@ namespace Insteon.Library
                             if (_bufferOffset < 25)
                                 return;
                             command = ExtractCommandFromBuffer(25);
-
+                            message = CommandBytesToExtendedMessage(command);
                             ProcessExtendedMessageReceived(command);
                             break;
 
@@ -1235,6 +1443,10 @@ namespace Insteon.Library
                         string commandString = BytesToString(command);
                         log.Debug("Received command " + commandString);
                     }
+                    if (null != message)
+                    {
+                        log.DebugFormat("Received message from {0} to {1}. Command: {2}, flags: {3}", message.SourceName, message.TargetName, message.CommandDescription, message.FlagDescription);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1297,6 +1509,142 @@ namespace Insteon.Library
             return _allDevices[address].Name;
         }
 
+        private InsteonStandardMessage CommandBytesToStandardMessage(byte[] command)
+        {
+            DeviceAddress sourceAddress = new DeviceAddress(command[2], command[3], command[4]);
+            DeviceAddress targetAddress =new DeviceAddress(command[5], command[6], command[7]);
+            byte messageFlag = command[8];
+            InsteonStandardMessage message = new InsteonStandardMessage(sourceAddress, targetAddress, command[9], command[10], messageFlag);
+
+            message.CommandDescription = StdCommandToString(command[9]);
+            Device sourceDevice = _allDevices.Values.FirstOrDefault(d => d.Address.StringAddress == sourceAddress.StringAddress);
+            if (null != sourceDevice)
+                message.SourceName = sourceDevice.Name;
+            else
+                message.SourceName = sourceAddress.StringAddress;
+
+            Device targetDevice = _allDevices.Values.FirstOrDefault(d => d.Address.StringAddress == targetAddress.StringAddress);
+            if (null != targetDevice)
+                message.TargetName = targetDevice.Name;
+            else
+                message.TargetName = targetAddress.StringAddress;
+
+            return message;
+        }
+
+        private InsteonExtendedMessage CommandBytesToExtendedMessage(byte[] command) {
+            DeviceAddress sourceAddress = new DeviceAddress(command[2], command[3], command[4]);
+            DeviceAddress targetAddress = new DeviceAddress(command[5], command[6], command[7]);
+            byte messageFlag = command[8];
+            byte[] extendedData = new byte[14];
+            Array.Copy(command, 11, extendedData, 0, 14);
+            InsteonExtendedMessage message = new InsteonExtendedMessage(sourceAddress, targetAddress, command[9], command[10], extendedData, messageFlag);
+
+
+            message.CommandDescription = ExtCommandToString(command[9]);
+            Device sourceDevice = _allDevices.Values.FirstOrDefault(d => d.Address == sourceAddress);
+            if (null != sourceDevice)
+                message.SourceName = sourceDevice.Name;
+            else
+                message.SourceName = sourceAddress.StringAddress;
+
+            Device targetDevice = _allDevices.Values.FirstOrDefault(d => d.Address == targetAddress);
+            if (null != targetDevice)
+                message.TargetName = targetDevice.Name;
+            else
+                message.TargetName = targetAddress.StringAddress;
+
+
+            return message;
+        }
+
+        private string StdCommandToString(byte command)
+        {
+            switch (command)
+            {
+                case 0x01:
+                    return "Assign to ALL-Link Group";
+                case 0x02:
+                    return "Delete from ALL-Link Group";
+                case 0x09:
+                    return "Enter Linking Mode";
+                case 0x0A:
+                    return "Enter Unlinking Mode";
+                case 0x0D:
+                    return "Get INSTEON Engine Version";
+                case 0x0F:
+                    return "Ping";
+                case 0x10:
+                    return "ID Request";
+                case 0x11:
+                    return "On";
+                case 0x12:
+                    return "Light On Fast";
+                case 0x13:
+                    return "Off";
+                case 0x14:
+                    return "Light Off Fast";
+                case 0x15:
+                    return "Brighten One Step";
+                case 0x16:
+                    return "Dim One Step";
+                case 0x17:
+                    return "Light Start Manual Change";
+                case 0x18:
+                    return "Light Stop Manual Change";
+                case 0x19:
+                    return "Light Status Request";
+                case 0x1F:
+                    return "Get Operating Flags";
+                case 0x20:
+                    return "Set Operating Flags";
+                case 0x21:
+                    return "Light Instant Change";
+                case 0x22:
+                    return "Light Manually Turned Off";
+                case 0x23:
+                    return "Light Manually Turned On";
+                case 0x24:
+                    return "Reread Init Values";
+                case 0x25:
+                    return "Remote SET Button Tap";
+                case 0x27:
+                    return "Light Set Status";
+                case 0x28:
+                    return "Set Address MSB";
+                case 0x29:
+                    return "Poke One Byte";
+                case 0x2B:
+                    return "Peek One Byte";
+                case 0x2C:
+                    return "Peek One Byte Internal";
+                case 0x2D:
+                    return "Poke One Byte Internal";
+                case 0x2E:
+                    return "Light ON at Ramp Rate";
+                default:
+                    return BitConverter.ToString(new byte[] { command });
+            }
+        }
+
+        private string ExtCommandToString(byte command)
+        {
+            switch (command)
+            {
+                case 0x2A:
+                    return "Block Data Transfer";
+                case 0x2E:
+                    return "Extended Set/Get";
+                case 0x2F:
+                    return "Read/Write ALL-Link Database";
+                case 0x30:
+                    return "Trigger ALL-Link Command";
+                default:
+                    return BitConverter.ToString(new byte[] { command });
+            }
+        }
+
+
         private byte[] ExtractCommandFromBuffer(int size)
         {
             byte[] command = new byte[size];
@@ -1325,6 +1673,12 @@ namespace Insteon.Library
 
         public void GetALDBForAllDevices()
         {
+            if (_aldbLibrary.LastSynchronized > DateTime.Now.AddDays(-7))
+            {
+                return;
+            }
+
+            _aldbLibrary.LastSynchronized = DateTime.Now;
             foreach (string key in _allDevices.Keys)
             {
                 // the PLM will not respond normally to this command, there are special commands for it
@@ -1333,14 +1687,17 @@ namespace Insteon.Library
                     continue;
 
                 DeviceALDB targetALDB = _aldbLibrary.Devices.FirstOrDefault(a => a.DeviceAddress == key);
+                
 
                 if (null != targetALDB && targetALDB.Delta == _allDevices[key].Delta && targetALDB.Delta != 0x00 && (targetALDB.ALDBRecords != null && targetALDB.ALDBRecords.Count > 0))
                 {
+                    targetALDB.Name = _allDevices[key].Name;
                     log.DebugFormat("Device {0}'s Delta matched the stored delta ({1})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
                     continue;
                 }
                 else if (null != targetALDB)
                 {
+                    targetALDB.Name = _allDevices[key].Name;
                     log.DebugFormat("Device {0}'s Delta ({1}) did not match the stored delta ({2})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"), targetALDB.Delta.ToString("X"));
                     targetALDB.Delta = _allDevices[key].Delta;
                 }
@@ -1348,6 +1705,7 @@ namespace Insteon.Library
                 {
                     log.DebugFormat("Device {0} was not in the ALDB Library.  Added with Delta {1}", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
                     targetALDB = new DeviceALDB();
+                    targetALDB.Name = _allDevices[key].Name; 
                     targetALDB.Delta = _allDevices[key].Delta;
                     targetALDB.DeviceAddress = _allDevices[key].AddressString;
 
@@ -1387,29 +1745,88 @@ namespace Insteon.Library
         {
             foreach (string key in _allDevices.Keys)
             {
+
+                Device device = _allDevices[key];
+
                 // the PLM will not respond normally to this command, there are special commands for it
                 // so do not get it in this fashion
-                if (_allDevices[key] is PLMDevice || _allDevices[key] is SensorDevice)
+                if (device is PLMDevice || device is SensorDevice)
                     continue;
                 log.Info(string.Format("Getting Status for {0}", _allDevices[key].Name));
 
+                if (device is ThermostatDevice)
+                {
+                    // getting the extended info first is better for the other information.
+                    GetThermostatExtendedInformation(device.Address);
+                    Thread.Sleep(200);
+                }
+
                 DeviceStatus status = GetDeviceStatus(_allDevices[key].Address);
+
+                if (device is ThermostatDevice)
+                {
+                    ThermostatDevice thermostat = _allDevices[key] as ThermostatDevice;
+
+
+                    log.InfoFormat("Status for device: {0} was Temp: {1}, Humidity: {2}, SetPoint: {3}, Mode: {4}, Fan: {5}", thermostat.Name, thermostat.AmbientTemperature, thermostat.Humidity, thermostat.CurrentMode == ThermostatDevice.Mode.Cooling ? thermostat.CoolSetPoint : thermostat.HeatSetPoint, thermostat.CurrentMode, thermostat.Fan);
+                    _gettingThermostat = false;
+                    continue;
+                }
 
                 log.Info(string.Format("Status for device: {0} was {1}", _allDevices[key].Name, (null != status ? status.OnLevel : 0m)));
 
-                _allDevices[key].Status = (null != status ? status.OnLevel : 0m);
+                device.Status = (null != status ? status.OnLevel : 0m);
 
                 Thread.Sleep(300);
 
-                if (_allDevices[key] is IMultiButtonDevice)
+                if (device is IMultiButtonDevice)
                 {
                     log.InfoFormat("Getting KPL Button Mask for device {0}", _allDevices[key].Name);
-                    GetKPLInformation(_allDevices[key].Address);
-                    log.InfoFormat("Returned from  Get KPL Information, Button Mask: " + ((IMultiButtonDevice)_allDevices[key]).KPLButtonMask.ToString("X"));
+                    GetKPLInformation(device.Address);
+                    log.InfoFormat("Returned from  Get KPL Information, Button Mask: " + ((IMultiButtonDevice)device).KPLButtonMask.ToString("X"));
                     Thread.Sleep(300);
                 }
             }
         }
+
+        public void GetThermostatExtendedInformation(DeviceAddress deviceAddress)
+        {
+            byte[] command = new byte[22];
+            try
+            {
+                // send a get status command
+                command[0] = 0x02;
+                command[1] = 0x62;
+                command[2] = deviceAddress.Byte1;
+                command[3] = deviceAddress.Byte2;
+                command[4] = deviceAddress.Byte3;
+                command[5] = 0x1F;
+                command[6] = Constants.EXT_COMMAND_EXTENDED_GET_SET;
+                command[7] = 0x00;
+                command[8] = 0x00;
+
+                _plm.Write(command, 0, 22);
+
+                _lastSentCommand = command;
+
+                _gettingThermostatExtended = true;
+
+                _extendedGetWaitHandle.Reset();
+                log.Info("Calling WaitOne on ExtendedGetWaitHandle");
+                _extendedGetWaitHandle.WaitOne(5000);
+                log.Info("ExtendedGetWaitHandle finished");
+
+
+                _gettingThermostatExtended = false;
+            }
+            catch (Exception ex)
+            {
+                log.Error(string.Format("Error getting thermostat extended Information for device: {0}", deviceAddress.ToString()));
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+            }
+        }
+
 
         public void GetKPLInformation(DeviceAddress deviceAddress)
         {

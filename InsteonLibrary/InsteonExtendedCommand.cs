@@ -6,12 +6,15 @@ using Insteon.Devices;
 
 namespace Insteon.Library
 {
-    public class InsteonExtendedCommand : InsteonStandardCommand
+    public class InsteonExtendedMessage : InsteonStandardMessage
     {
-        public InsteonExtendedCommand(DeviceAddress targetAddress, byte command1, byte command2)
-            : base(targetAddress, command1, command2)
-        {
+        private byte[] _data;
 
+
+        public InsteonExtendedMessage(DeviceAddress sourceAddress, DeviceAddress targetAddress, byte command1, byte command2, byte[] data, byte flag)
+            : base(sourceAddress, targetAddress, command1, command2, flag)
+        {
+            _data = data;
         }
 
 

@@ -12,6 +12,8 @@ namespace Insteon.Library
         private List<ALDBRecord> _aldbRecords;
 
         [XmlAttribute]
+        public string Name { get; set; }
+        [XmlAttribute]
         public string DeviceAddress { get; set; }
         [XmlAttribute]
         public byte Delta { get; set; }

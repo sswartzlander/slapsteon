@@ -92,6 +92,7 @@
             this.btnResetPLM = new System.Windows.Forms.Button();
             this.btnStartAllLink = new System.Windows.Forms.Button();
             this.btnCancelAllLink = new System.Windows.Forms.Button();
+            this.chkChecksum = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevices)).BeginInit();
             this.SuspendLayout();
@@ -650,11 +651,22 @@
             this.btnCancelAllLink.UseVisualStyleBackColor = true;
             this.btnCancelAllLink.Click += new System.EventHandler(this.btnCancelAllLink_Click);
             // 
+            // chkChecksum
+            // 
+            this.chkChecksum.AutoSize = true;
+            this.chkChecksum.Location = new System.Drawing.Point(700, 60);
+            this.chkChecksum.Name = "chkChecksum";
+            this.chkChecksum.Size = new System.Drawing.Size(63, 17);
+            this.chkChecksum.TabIndex = 43;
+            this.chkChecksum.Text = "chksum";
+            this.chkChecksum.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(769, 492);
+            this.Controls.Add(this.chkChecksum);
             this.Controls.Add(this.btnCancelAllLink);
             this.Controls.Add(this.btnStartAllLink);
             this.Controls.Add(this.btnResetPLM);
@@ -776,6 +788,7 @@
         private System.Windows.Forms.Button btnResetPLM;
         private System.Windows.Forms.Button btnStartAllLink;
         private System.Windows.Forms.Button btnCancelAllLink;
+        private System.Windows.Forms.CheckBox chkChecksum;
 
     }
 }

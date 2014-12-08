@@ -91,5 +91,20 @@ namespace Insteon.Library
         [WebGet(UriTemplate = "/{device}/On2W/{level}/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
         void On2Web(string device, string level, string ip);
 
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/SetModeCool/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SetCoolMode(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/SetModeHeat/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SetHeatMode(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/SetPointUp/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SetPointUp(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/{device}/SetPointDown/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SetPointDown(string device, string ip);
     }
 }

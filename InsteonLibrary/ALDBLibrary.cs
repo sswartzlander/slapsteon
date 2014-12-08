@@ -10,6 +10,15 @@ namespace Insteon.Library
     public class ALDBLibrary
     {
         private List<DeviceALDB> _deviceALDBList;
+        private DateTime _lastSynchronized;
+
+
+        [XmlElement]
+        public DateTime LastSynchronized
+        {
+            get { return _lastSynchronized; }
+            set { _lastSynchronized = value; }
+        }
 
         [XmlElement]
         public List<DeviceALDB> Devices

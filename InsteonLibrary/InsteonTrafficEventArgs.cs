@@ -11,7 +11,7 @@ namespace Insteon.Library
         public Device Source { get; set; }
         public DeviceAddress Destination { get; set; }
 
-        public FlagsAck Flags { get; set; }
+        public MessageFlag Flags { get; set; }
         public byte Command1 { get; set; }
         public byte Command2 { get; set; }
 

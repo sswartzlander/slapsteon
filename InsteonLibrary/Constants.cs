@@ -107,6 +107,25 @@ namespace Insteon.Library
         /// </summary>
         public const byte STD_COMMAND_BEEP = 0x30;
 
+        public const byte STD_COMMAND_THERMOSTAT_TEMP_UP = 0x68;
+
+        public const byte STD_COMMAND_THERMOSTAT_TEMP_DOWN = 0x69;
+
+        public const byte STD_COMMAND_THERMOSTAT_SET_COOL_POINT = 0x6C;
+
+        public const byte STD_COMMAND_THERMOSTAT_SET_HEAT_POINT = 0x6D;
+
+        public const byte STD_COMMAND_THERMOSTAT_STATUS = 0x6A;
+
+        public const byte STD_COMMAND_THERMOSTAT_CONTROL = 0x6B;
+
+        public const byte STD_COMMAND_THERMOSTAT_STATUS_TEMP = 0x6E;
+        public const byte STD_COMMAND_THERMOSTAT_STATUS_HUMIDITY = 0x6F;
+        public const byte STD_COMMAND_THERMOSTAT_STATUS_MODE_FAN = 0x70;
+        public const byte STD_COMMAND_THERMOSTAT_STATUS_COOL_SET = 0x71;
+        public const byte STD_COMMAND_THERMOSTAT_STATUS_HEAT_SET = 0x72;
+
+
         #endregion
 
         #region Extended Commands
@@ -203,5 +222,21 @@ namespace Insteon.Library
         public const byte IM_COMMAND_CANCEL_ALL_LINKING = 0x65;
         public const byte IM_COMMAND_ALL_LINK_RECORD_RESPONSE = 0x57;
         public const byte IM_COMMAND_RESET_IM = 0x67;
+
+
+        // Thermostat Control Info (Cmd2 for STD_COMMAND_THERMOSTAT_CONTROL)
+        public const byte THERMOSTAT_CONTROL_SET_HEAT_MODE = 0x04;
+        public const byte THERMOSTAT_CONTROL_SET_COOL_MODE = 0x05;
+        public const byte THERMOSTAT_CONTROL_SET_AUTO_MODE = 0x06;
+        public const byte THERMOSTAT_CONTROL_SET_FAN_ON = 0x07;
+        public const byte THERMOSTAT_CONTROL_SET_FAN_OFF = 0x08;
+        public const byte THERMOSTAT_CONTROL_SET_FAN_AUTO = 0x09;
+        public const byte THERMOSTAT_CONTROL_SET_ALL_OFF = 0x0A;
+
+
+        // Thermostat status (Cmd when receiving thermostat status 0x6A)
+        public const byte THERMOSTAT_STATUS_TEMP = 0x00;
+        public const byte THERMOSTAT_STATUS_SETPOINT = 0x20;
+        public const byte THERMOSTAT_STATUS_HUMIDITY = 0x60;
     }
 }

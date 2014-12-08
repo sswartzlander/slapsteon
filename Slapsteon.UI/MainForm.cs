@@ -38,7 +38,7 @@ namespace Slapsteon.UI
                 _serialPort = comPortString;
 
             InitializeComponent();
-            _handler = new InsteonHandler(_serialPort);
+            _handler = new InsteonHandler(_serialPort, false);
 
             foreach (string key in _handler.AllDevices.Keys)
             {
@@ -134,15 +134,15 @@ namespace Slapsteon.UI
                 // this is a hack to handle linking non-configured devices w/ the checksum
 
                 // this is what i saw reflecting in houselinc...
-                byte checksum = (byte)(((0x09 + cmd2) ^ 0xFF) + 1);
+                
                 DeviceAddress targetAddress = new DeviceAddress(ud1, ud2, ud3);
-                _handler.SendExtendedCommand(targetAddress, cmd1, cmd2, flags, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00, 0x00, checksum, true);
+                _handler.SendExtendedCommand(targetAddress, cmd1, cmd2, flags, chkChecksum.Checked, false, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00);
 
 
             }
             else 
-            _handler.SendExtendedCommand(_selectedDevice.Address, cmd1, cmd2, flags, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
+            _handler.SendExtendedCommand(_selectedDevice.Address, cmd1, cmd2, flags, chkChecksum.Checked, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
                 ud9, ud10, ud11, ud12, ud13, ud14);
 
         }

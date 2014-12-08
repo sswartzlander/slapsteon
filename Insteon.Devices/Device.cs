@@ -18,6 +18,7 @@ namespace Insteon.Devices
     [KnownType(typeof(SensorDevice))]
     [KnownType(typeof(IODevice))]
     [KnownType(typeof(IMultiButtonDevice))]
+    [KnownType(typeof(ThermostatDevice))]
     public class Device
     {
         private LightOffTimer _timer;
@@ -88,6 +89,13 @@ namespace Insteon.Devices
             get { return Address != null ? Address.ToString() : null; }
             set { ;}
 
+        }
+
+        [DataMember]
+        public string Floor
+        {
+            get;
+            set;
         }
 
         public List<Device> SlaveDevices

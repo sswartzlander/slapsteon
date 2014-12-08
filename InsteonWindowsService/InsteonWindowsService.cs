@@ -72,7 +72,7 @@ namespace Insteon.WindowsService
 
                 SetServiceState(State.SERVICE_START_PENDING);
 
-                _handler = new InsteonHandler(serialPort);
+                _handler = new InsteonHandler(serialPort, true);
 
                 _handler.InsteonTrafficDetected += new InsteonHandler.InsteonTrafficHandler(_handler_InsteonTrafficDetected);
                 _handler.PartyDetected += new InsteonHandler.PartyHandler(_handler_PartyDetected);

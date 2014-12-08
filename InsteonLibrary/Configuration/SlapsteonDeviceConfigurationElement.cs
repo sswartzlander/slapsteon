@@ -127,5 +127,33 @@ namespace Insteon.Library.Configuration
             get { return this["isOffAtSunrise"] as bool?; }
             set { this["isOffAtSunrise"] = value; }
         }
+
+        [ConfigurationProperty("floor")]
+        public string Floor
+        {
+            get { return this["floor"] as string; }
+            set { this["floor"] = value; }
+        }
+
+        [ConfigurationProperty("isThermostat", DefaultValue = false)]
+        public bool? IsThermostat
+        {
+            get { return this["isThermostat"] as bool?; }
+            set { this["isThermostat"] = value; }
+        }
+
+        [ConfigurationProperty("thermostatMode", DefaultValue="cool", IsRequired = false)]
+        public string ThermostatMode
+        {
+            get { return this["thermostatMode"] as string; }
+            set { this["thermostatMode"] = value; }
+        }
+
+        [ConfigurationProperty("thermostatSetPoint", DefaultValue = "70", IsRequired = false)]
+        public string ThermostatSetPoint
+        {
+            get { return this["thermostatSetPoint"] as string; }
+            set { this["thermostatSetPoint"] = value; }
+        }
     }
 }

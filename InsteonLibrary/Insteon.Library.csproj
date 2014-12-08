@@ -60,7 +60,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="DeviceALDB.cs" />
     <Compile Include="DeviceStatus.cs" />
-    <Compile Include="FlagsAck.cs" />
+    <Compile Include="MessageFlag.cs" />
     <Compile Include="InsteonExtendedCommand.cs" />
     <Compile Include="InsteonHandler.cs" />
     <Compile Include="IInsteonWebService.cs" />

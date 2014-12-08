@@ -395,7 +395,88 @@ namespace Insteon.Library
 
 
 
-            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x1F, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_ON, byteLevel, 0x1F, false, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+        }
+
+        public void SetCoolMode(string device, string ip)
+        {
+            ThermostatDevice dev = GetDevice(device) as ThermostatDevice;
+            if (null == dev)
+                return;
+            dev.CurrentMode = ThermostatDevice.Mode.Cooling;
+
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Thermostat changed to Cooling by API {0}", ip)));
+
+
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_THERMOSTAT_CONTROL, Constants.THERMOSTAT_CONTROL_SET_COOL_MODE, 0x1F, true);
+        }
+
+
+        public void SetHeatMode(string device, string ip)
+        {
+            ThermostatDevice dev = GetDevice(device) as ThermostatDevice;
+            if (null == dev)
+                return;
+            dev.CurrentMode = ThermostatDevice.Mode.Heating;
+
+
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Thermostat changed to Heating by API {0}", ip)));
+
+
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_THERMOSTAT_CONTROL, Constants.THERMOSTAT_CONTROL_SET_HEAT_MODE, 0x1F, true);
+
+        }
+
+        public void SetPointUp(string device, string ip)
+        {
+            ThermostatDevice dev = GetDevice(device) as ThermostatDevice;
+            if (null == dev)
+                return;
+           
+            int newSetPoint = 0;
+
+            if (dev.CurrentMode == ThermostatDevice.Mode.Cooling)
+            {
+                newSetPoint = ++dev.CoolSetPoint;
+            }
+            else if (dev.CurrentMode == ThermostatDevice.Mode.Heating)
+            {
+                newSetPoint = ++dev.HeatSetPoint;
+            }
+
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Thermostat set point increased to {0} by API {1}", newSetPoint, ip)));
+
+
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_THERMOSTAT_TEMP_UP, 0x02, 0x1F, true);
+
+        }
+
+        public void SetPointDown(string device, string ip)
+        {
+            ThermostatDevice dev = GetDevice(device) as ThermostatDevice;
+            if (null == dev)
+                return;
+
+            int newSetPoint = 0;
+
+            if (dev.CurrentMode == ThermostatDevice.Mode.Cooling)
+            {
+                newSetPoint = --dev.CoolSetPoint;
+            }
+            else if (dev.CurrentMode == ThermostatDevice.Mode.Heating)
+            {
+                newSetPoint = --dev.HeatSetPoint;
+            }
+
+            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
+                string.Format("Thermostat set point decreased to {0} by API {1}", newSetPoint, ip)));
+
+
+            _handler.SendExtendedCommand(dev.Address, Constants.STD_COMMAND_THERMOSTAT_TEMP_DOWN, 0x02, 0x1F, true);
 
         }
 

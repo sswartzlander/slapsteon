@@ -1,0 +1,16 @@
+﻿@model Slapsteon.RazorWeb.Models.SlapsteonEventLogEntry[]
+
+@foreach (var entry in Model)
+{
+<tr>
+<td>
+@entry.Timestamp.ToShortTimeString()
+</td>
+<td>
+@entry.DeviceName
+</td>
+<td>
+@entry.Description
+</td>
+</tr>
+}

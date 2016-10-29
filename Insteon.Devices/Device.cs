@@ -116,5 +116,15 @@ namespace Insteon.Devices
 
         public bool IsOnAtSunset { get; set; }
         public bool IsOffAtSunrise { get; set; }
+
+        public bool IsRandomOn { get; set; }
+        public int? RandomOnStart { get; set; }
+        public int? RandomRunDuration { get; set; }
+        public int? RandomDurationMin { get; set; }
+        public int? RandomDurationMax { get; set; }
+        public int? RandomOnChance { get; set; }
+        public bool LastOnWasRandom { get; set; }
+        public DateTime? LastRandomOnTime { get; set; }
+        public int? LastRandomOnLength { get; set; }
     }
 }

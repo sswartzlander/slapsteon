@@ -1,0 +1,43 @@
+﻿@model Insteon.Devices.RelayDevice
+
+<tr>
+<td>
+<div id="div@(Model.Name)" class="device">
+
+    @if (Model.Status > 0)
+    {
+    <div class="on_device">
+    @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+    {
+        @Html.ActionLink(Model.Name, "Off", Model)
+    }
+    else 
+    {
+        @Html.Label(Model.Name)   
+    }
+        <span class="right">Level: @Html.Label(Model.Status.ToString())</span>
+    </div>
+    <br />
+    <span class="left">LastOn: @Html.Label(Model.LastOn.ToShortTimeString())</span>
+    }
+    else
+    {
+    <div class="off_device">
+    @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+    {
+        @Html.ActionLink(Model.Name, "On", Model)
+    }
+    else
+    {
+     @Html.Label(Model.Name)   
+    }
+        <span class="right">Level: @Html.Label(Model.Status.ToString())</span>
+    </div>
+    <br />
+    <span class="left">LastOff: @Html.Label(Model.LastOff.ToShortTimeString())</span>
+    }
+
+
+</div>
+</td>
+</tr>

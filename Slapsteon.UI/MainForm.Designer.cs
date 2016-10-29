@@ -93,6 +93,13 @@
             this.btnStartAllLink = new System.Windows.Forms.Button();
             this.btnCancelAllLink = new System.Windows.Forms.Button();
             this.chkChecksum = new System.Windows.Forms.CheckBox();
+            this.btnGetNextLink = new System.Windows.Forms.Button();
+            this.btnLinkDevice = new System.Windows.Forms.Button();
+            this.chkChecksum2 = new System.Windows.Forms.CheckBox();
+            this.txtDevAddress = new System.Windows.Forms.TextBox();
+            this.label24 = new System.Windows.Forms.Label();
+            this.btnGetFirstLink = new System.Windows.Forms.Button();
+            this.btnShowIMLinks = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDevices)).BeginInit();
             this.SuspendLayout();
@@ -633,7 +640,7 @@
             // 
             // btnStartAllLink
             // 
-            this.btnStartAllLink.Location = new System.Drawing.Point(421, 457);
+            this.btnStartAllLink.Location = new System.Drawing.Point(405, 457);
             this.btnStartAllLink.Name = "btnStartAllLink";
             this.btnStartAllLink.Size = new System.Drawing.Size(75, 23);
             this.btnStartAllLink.TabIndex = 41;
@@ -643,7 +650,7 @@
             // 
             // btnCancelAllLink
             // 
-            this.btnCancelAllLink.Location = new System.Drawing.Point(513, 457);
+            this.btnCancelAllLink.Location = new System.Drawing.Point(486, 457);
             this.btnCancelAllLink.Name = "btnCancelAllLink";
             this.btnCancelAllLink.Size = new System.Drawing.Size(94, 23);
             this.btnCancelAllLink.TabIndex = 42;
@@ -661,11 +668,84 @@
             this.chkChecksum.Text = "chksum";
             this.chkChecksum.UseVisualStyleBackColor = true;
             // 
+            // btnGetNextLink
+            // 
+            this.btnGetNextLink.Location = new System.Drawing.Point(587, 471);
+            this.btnGetNextLink.Name = "btnGetNextLink";
+            this.btnGetNextLink.Size = new System.Drawing.Size(82, 23);
+            this.btnGetNextLink.TabIndex = 44;
+            this.btnGetNextLink.Text = "Get Next Link";
+            this.btnGetNextLink.UseVisualStyleBackColor = true;
+            this.btnGetNextLink.Click += new System.EventHandler(this.btnGetNextLink_Click);
+            // 
+            // btnLinkDevice
+            // 
+            this.btnLinkDevice.Location = new System.Drawing.Point(682, 224);
+            this.btnLinkDevice.Name = "btnLinkDevice";
+            this.btnLinkDevice.Size = new System.Drawing.Size(75, 23);
+            this.btnLinkDevice.TabIndex = 45;
+            this.btnLinkDevice.Text = "Link Device";
+            this.btnLinkDevice.UseVisualStyleBackColor = true;
+            this.btnLinkDevice.Click += new System.EventHandler(this.btnLinkDevice_Click);
+            // 
+            // chkChecksum2
+            // 
+            this.chkChecksum2.AutoSize = true;
+            this.chkChecksum2.Location = new System.Drawing.Point(416, 228);
+            this.chkChecksum2.Name = "chkChecksum2";
+            this.chkChecksum2.Size = new System.Drawing.Size(75, 17);
+            this.chkChecksum2.TabIndex = 46;
+            this.chkChecksum2.Text = "checksum";
+            this.chkChecksum2.UseVisualStyleBackColor = true;
+            // 
+            // txtDevAddress
+            // 
+            this.txtDevAddress.Location = new System.Drawing.Point(569, 225);
+            this.txtDevAddress.Name = "txtDevAddress";
+            this.txtDevAddress.Size = new System.Drawing.Size(100, 20);
+            this.txtDevAddress.TabIndex = 47;
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(518, 229);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(45, 13);
+            this.label24.TabIndex = 48;
+            this.label24.Text = "Address";
+            // 
+            // btnGetFirstLink
+            // 
+            this.btnGetFirstLink.Location = new System.Drawing.Point(587, 449);
+            this.btnGetFirstLink.Name = "btnGetFirstLink";
+            this.btnGetFirstLink.Size = new System.Drawing.Size(82, 23);
+            this.btnGetFirstLink.TabIndex = 49;
+            this.btnGetFirstLink.Text = "Get 1st Link";
+            this.btnGetFirstLink.UseVisualStyleBackColor = true;
+            this.btnGetFirstLink.Click += new System.EventHandler(this.btnGetFirstLink_Click);
+            // 
+            // btnShowIMLinks
+            // 
+            this.btnShowIMLinks.Location = new System.Drawing.Point(247, 430);
+            this.btnShowIMLinks.Name = "btnShowIMLinks";
+            this.btnShowIMLinks.Size = new System.Drawing.Size(75, 42);
+            this.btnShowIMLinks.TabIndex = 50;
+            this.btnShowIMLinks.Text = "Show IM Links";
+            this.btnShowIMLinks.UseVisualStyleBackColor = true;
+            this.btnShowIMLinks.Click += new System.EventHandler(this.btnShowIMLinks_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(769, 492);
+            this.Controls.Add(this.btnShowIMLinks);
+            this.Controls.Add(this.btnGetFirstLink);
+            this.Controls.Add(this.label24);
+            this.Controls.Add(this.txtDevAddress);
+            this.Controls.Add(this.chkChecksum2);
+            this.Controls.Add(this.btnLinkDevice);
+            this.Controls.Add(this.btnGetNextLink);
             this.Controls.Add(this.chkChecksum);
             this.Controls.Add(this.btnCancelAllLink);
             this.Controls.Add(this.btnStartAllLink);
@@ -789,6 +869,13 @@
         private System.Windows.Forms.Button btnStartAllLink;
         private System.Windows.Forms.Button btnCancelAllLink;
         private System.Windows.Forms.CheckBox chkChecksum;
+        private System.Windows.Forms.Button btnGetNextLink;
+        private System.Windows.Forms.Button btnLinkDevice;
+        private System.Windows.Forms.CheckBox chkChecksum2;
+        private System.Windows.Forms.TextBox txtDevAddress;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.Button btnGetFirstLink;
+        private System.Windows.Forms.Button btnShowIMLinks;
 
     }
 }

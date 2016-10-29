@@ -51,6 +51,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LinkRecordViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LinkRecordViewer.Designer.cs">
+      <DependentUpon>LinkRecordViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -65,6 +71,9 @@
     <Compile Include="ViewAddressTable.Designer.cs">
       <DependentUpon>ViewAddressTable.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="LinkRecordViewer.resx">
+      <DependentUpon>LinkRecordViewer.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

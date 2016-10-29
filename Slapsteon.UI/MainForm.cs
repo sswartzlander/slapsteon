@@ -134,10 +134,10 @@ namespace Slapsteon.UI
                 // this is a hack to handle linking non-configured devices w/ the checksum
 
                 // this is what i saw reflecting in houselinc...
-                
-                DeviceAddress targetAddress = new DeviceAddress(ud1, ud2, ud3);
-                _handler.SendExtendedCommand(targetAddress, cmd1, cmd2, flags, chkChecksum.Checked, false, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00, 0x00);
+
+                DeviceAddress targetAddress = GetCustomAddress();
+                _handler.SendExtendedCommand(targetAddress, cmd1, cmd2, flags, chkChecksum.Checked, true, ud1, ud2, ud3, ud4, ud5, ud6, ud7, ud8,
+                ud9, ud10, ud11, ud12, ud13, ud14);
 
 
             }
@@ -243,6 +243,51 @@ namespace Slapsteon.UI
         private void btnCancelAllLink_Click(object sender, EventArgs e)
         {
             _handler.SendCancelAllLink();
+        }
+
+        private void btnGetNextLink_Click(object sender, EventArgs e)
+        {
+            _handler.GetNextIMLink();
+        }
+
+        private void btnLinkDevice_Click(object sender, EventArgs e)
+        {
+            DeviceAddress devAddress = GetCustomAddress();
+
+            bool sendChecksum = chkChecksum2.Checked;
+
+            _handler.SendExtendedCommand(devAddress, 0x09, 0x01, 0x1F, sendChecksum, true, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00);
+        }
+
+        private void btnGetFirstLink_Click(object sender, EventArgs e)
+        {
+            _handler.GetFirstIMLink();
+        }
+
+        private DeviceAddress GetCustomAddress()
+        {
+            if (txtDevAddress.Text.Trim().Length != 6)
+            {
+                MessageBox.Show("Invalid Device address to link");
+                return null;
+            }
+
+            string textAddress = txtDevAddress.Text.Trim();
+
+            byte addr1 = StringToByte(textAddress.Substring(0, 2));
+            byte addr2 = StringToByte(textAddress.Substring(2, 2));
+            byte addr3 = StringToByte(textAddress.Substring(4));
+
+            DeviceAddress devAddress = new DeviceAddress(addr1, addr2, addr3);
+
+            return devAddress;
+        }
+
+        private void btnShowIMLinks_Click(object sender, EventArgs e)
+        {
+            LinkRecordViewer linkRecordViewer = new LinkRecordViewer(_handler.IMLinks);
+            linkRecordViewer.Show();
         }
     }
 }

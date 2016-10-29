@@ -45,6 +45,8 @@ namespace Insteon.Library
         private EventWaitHandle _extendedGetWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
         private Dictionary<string,Device> _allDevices = new Dictionary<string,Device>();
         private ALDBLibrary _aldbLibrary = new ALDBLibrary();
+
+        private List<LinkRecord> _imLinks = new List<LinkRecord>();
         public Dictionary<string, Device> AllDevices
         {
             get
@@ -60,6 +62,8 @@ namespace Insteon.Library
                 return _aldbLibrary;
             }
         }
+
+        public List<LinkRecord> IMLinks { get { return _imLinks; } }
 
         public InsteonHandler(string comPort, bool saveALDB)
         {
@@ -137,6 +141,14 @@ namespace Insteon.Library
                 dev.IsOnAtSunset = element.IsOnAtSunset ?? false;
                 dev.IsOffAtSunrise = element.IsOffAtSunrise ?? false;
                 dev.Floor = element.Floor;
+
+                // load random schedule settings
+                dev.IsRandomOn = element.IsRandomOn ?? false;
+                dev.RandomOnStart = element.RandomStartTime;
+                dev.RandomRunDuration = element.RandomRunDuration;
+                dev.RandomDurationMin = element.RandomDurationMin;
+                dev.RandomDurationMax = element.RandomDurationMax;
+                dev.RandomOnChance = element.RandomOnChance;
 
                 _allDevices.Add(deviceAddress.ToString(), dev);
             }
@@ -360,15 +372,15 @@ namespace Insteon.Library
                         {
                             if (_gettingTemp)
                             {
-                                ((ThermostatDevice)sourceDevice).AmbientTemperature = (int)(command2 / 2m);
+                                ((ThermostatDevice)sourceDevice).AmbientTemperature = (int)Math.Round(((decimal)command2) / 2m,0);
                                 _gettingTemp = false;
                             }
                             else if (_gettingSetPoint)
                             {
                                 if (((ThermostatDevice)sourceDevice).CurrentMode == ThermostatDevice.Mode.Cooling)
-                                    ((ThermostatDevice)sourceDevice).CoolSetPoint = (int)(command2 / 2m);
+                                    ((ThermostatDevice)sourceDevice).CoolSetPoint = (int)Math.Round(((decimal)command2) / 2m, 0);
                                 else
-                                    ((ThermostatDevice)sourceDevice).HeatSetPoint = (int)(command2 / 2m);
+                                    ((ThermostatDevice)sourceDevice).HeatSetPoint = (int)Math.Round(((decimal)command2) / 2m, 0);
 
                                 _gettingSetPoint = false;
 
@@ -394,13 +406,17 @@ namespace Insteon.Library
                     switch (command1)
                     {
                         case Constants.STD_COMMAND_THERMOSTAT_STATUS_TEMP:
-                            thermostat.AmbientTemperature =(int)(command2 * 0.5m);
+                            thermostat.AmbientTemperature = (int)Math.Round(((decimal)command2) * 0.5m, 0);
 
                             log.InfoFormat("Received temperature update: {0}", thermostat.AmbientTemperature);
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(thermostat.Name,
+                                string.Format("Temperature detected: {0}°F", thermostat.AmbientTemperature)));
+
                             break;
                         case Constants.STD_COMMAND_THERMOSTAT_STATUS_HUMIDITY:
                             thermostat.Humidity = (int)command2;
                             log.InfoFormat("Received humidity update: {0}", thermostat.Humidity);
+
                             break;
                         case Constants.STD_COMMAND_THERMOSTAT_STATUS_MODE_FAN:
                             log.InfoFormat("Thermostat mode byte: {0}", command2.ToString("X"));
@@ -415,7 +431,7 @@ namespace Insteon.Library
                                 thermostat.CurrentMode = ThermostatDevice.Mode.Auto;
                             else if ((command2 & 0x0F) == 0x04)
                                 thermostat.CurrentMode = ThermostatDevice.Mode.Program;
-                            else 
+                            else
                                 log.WarnFormat("Unable to determine mode from status byte: {0}", command2.ToString("X"));
 
                             // extract fan info, high byte command 2, 0=auto,1=alwayson
@@ -425,14 +441,23 @@ namespace Insteon.Library
                                 thermostat.Fan = ThermostatDevice.FanMode.AlwaysOn;
                             else
                                 log.WarnFormat("Unable to determine fan from status byte: {0}", command2.ToString("X"));
+
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(thermostat.Name,
+                                string.Format("Mode: {0}, Fan: {1}", thermostat.CurrentMode, thermostat.Fan)));
                             break;
                         case Constants.STD_COMMAND_THERMOSTAT_STATUS_COOL_SET:
                             thermostat.CoolSetPoint = (int)(command2);
                             log.InfoFormat("Received thermostat cool setpoint update: {0}", thermostat.CoolSetPoint);
+
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(thermostat.Name,
+                                string.Format("Cool set point: {0}", thermostat.CoolSetPoint)));
+
                             break;
                         case Constants.STD_COMMAND_THERMOSTAT_STATUS_HEAT_SET:
                             thermostat.HeatSetPoint = (int)(command2);
                             log.InfoFormat("Received thermostat heat setpoint update: {0}", thermostat.HeatSetPoint);
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(thermostat.Name,
+                                string.Format("Heat set point: {0}", thermostat.HeatSetPoint)));
                             break;
                         default:
                             log.InfoFormat("Unknown message from thermostat device received: {0}", command1.ToString("X"));
@@ -560,8 +585,11 @@ namespace Insteon.Library
                             sourceDevice.Status = 0;
                             sourceDevice.LastOff = DateTime.Now;
 
-                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
-                                  string.Format("Turned off by keypress.")));
+                            if (!(sourceDevice is ThermostatDevice))
+                            {
+                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                      string.Format("Turned off by keypress.")));
+                            }
                         }
                     }
                     commandType = "CommandOff";
@@ -580,13 +608,15 @@ namespace Insteon.Library
                             else
                                 sourceDevice.Status = 100;
 
-
-                            if (sourceDevice is SensorDevice)
-                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
-                                    string.Format("Motion Detected")));
-                            else
-                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
-                                    string.Format("Turned on by keypress.")));
+                            if (!(sourceDevice is ThermostatDevice))
+                            {
+                                if (sourceDevice is SensorDevice)
+                                    SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                        string.Format("Motion Detected")));
+                                else
+                                    SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(sourceDevice.Name,
+                                        string.Format("Turned on by keypress.")));
+                            }
                         }
                     }
 
@@ -1115,6 +1145,34 @@ namespace Insteon.Library
 
             }
         }
+
+        public void GetFirstIMLink()
+        {
+            try
+            {
+                byte[] command = new byte[2];
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_GET_FIRST_ALL_LINK_RECORD;
+                _plm.Write(command, 0, 2);
+            }
+            catch (Exception ex) { }
+        }
+
+        public void GetNextIMLink()
+        {
+            try
+            {
+                byte[] command = new byte[2];
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_GET_NEXT_ALL_LINK_RECORD;
+                _plm.Write(command, 0, 2);
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public DeviceStatus GetDeviceStatus(DeviceAddress deviceAddress)
         {
             byte[] command = new byte[8];
@@ -1316,15 +1374,20 @@ namespace Insteon.Library
                 {
                     InsteonStandardMessage message = null;
 
-                    if (_bufferOffset < 2)
+                    if (_bufferOffset <= 2)
+                    {
+                        Thread.Sleep(100);
                         return;
+                    }
 
                     if (_buffer[0] != 0x02)
                         throw new Exception("Buffer does not start with 0x02");
 
                     byte[] command = null;
 
-                    switch (_buffer[1])
+                    byte commandByte = _buffer[1];
+
+                    switch (commandByte)
                     {
                         case Constants.IM_COMMAND_SET_IM_CONFIGURATION:
                             if (_bufferOffset < 4)
@@ -1411,8 +1474,15 @@ namespace Insteon.Library
                             break;
                         case Constants.IM_COMMAND_ALL_LINK_RECORD_RESPONSE:
                             if (_bufferOffset < 10)
-                                break;
+                                return;
                             command = ExtractCommandFromBuffer(10);
+
+                            ProcessAllLinkResponse(command);
+                            break;
+                        case Constants.IM_COMMAND_GET_NEXT_ALL_LINK_RECORD:
+                            if (_bufferOffset < 3)
+                                return;
+                            command = ExtractCommandFromBuffer(3);
                             break;
                         case Constants.IM_COMMAND_RESET_IM:
 
@@ -1425,6 +1495,15 @@ namespace Insteon.Library
                             else
                                 log.InfoFormat("Failed to Reset IM: {0}", command[2].ToString("X"));
 
+                            break;
+
+                        case Constants.IM_COMMAND_GET_FIRST_ALL_LINK_RECORD:
+                            if (_bufferOffset < 3)
+                                break;
+                            command = ExtractCommandFromBuffer(3);
+
+                            // if getting first link we want to clear the list of links
+                            _imLinks.Clear();
                             break;
                         default:
                             log.Warn(string.Format("Unknown IM command type in the buffer: {0}.  Cleaning the buffer.", _buffer[1].ToString("X")));
@@ -1441,7 +1520,7 @@ namespace Insteon.Library
                     if (null != command)
                     {
                         string commandString = BytesToString(command);
-                        log.Debug("Received command " + commandString);
+                        log.Debug(string.Format("Received command {0} {1}", commandString, (Constants.IM_COMMAND)commandByte));
                     }
                     if (null != message)
                     {
@@ -1948,6 +2027,18 @@ namespace Insteon.Library
             device.LastOff = DateTime.Now;
             this.SendStandardCommand(device.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
             this.ProcessSendingRelatedEvents(Constants.STD_COMMAND_FAST_OFF, device);
+        }
+
+        private void ProcessAllLinkResponse(byte[] allLinkMessage)
+        {
+            // 02 57 A2/E2 GRP ADR1 ADR2 ADR3 Local Data
+
+            DeviceAddress address = new DeviceAddress(allLinkMessage[4], allLinkMessage[5], allLinkMessage[6]);
+            LinkRecord linkRecord = new LinkRecord(allLinkMessage[2], allLinkMessage[3], address, allLinkMessage[7], allLinkMessage[8], allLinkMessage[9]);
+
+            linkRecord.ReferenceDeviceName = GetDeviceName(address.StringAddress);
+
+            _imLinks.Add(linkRecord);
         }
     }
 

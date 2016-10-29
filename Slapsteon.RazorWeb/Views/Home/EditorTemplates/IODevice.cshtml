@@ -1,0 +1,24 @@
+﻿@model Insteon.Devices.IODevice
+<tr>
+<td>
+<div id="div@(Model.Name)" class="device">
+
+    @if (Model.Status > 0)
+    {
+    <div class="on_device">
+        @Html.Label(Model.Name)
+    </div>
+    }
+    else
+    {
+    <div class="off_device">
+        @Html.Label(Model.Name)
+    </div>
+    }
+    <b>Status:</b> @Html.Label(Model.Status.ToString())
+    <br />
+    <span class="left">Last Open: @Html.Label(Model.LastOn.ToShortTimeString())</span>
+    <span class="right">Last Closed: @Html.Label(Model.LastOff.ToShortTimeString())</span>
+</div>
+</td>
+</tr>

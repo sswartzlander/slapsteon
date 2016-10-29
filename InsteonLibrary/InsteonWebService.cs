@@ -515,6 +515,45 @@ namespace Insteon.Library
             }
         }
 
+        public void EnterLinkingMode()
+        {
+            _handler.SendStartAllLink();
+        }
+
+        public void CancelLinkingMode()
+        {
+            _handler.SendCancelAllLink();
+        }
+
+        public void SendStandardCommand(string command)
+        {
+            byte[] commandBytes = ConvertCommandStringToBytes(command);
+
+            _handler.SendStandardCommand(new DeviceAddress(commandBytes[2],commandBytes[3],commandBytes[4]), commandBytes[6], commandBytes[7], commandBytes[5]);
+        }
+
+        public void SendExtendedCommand(string command)
+        {
+            byte[] commandBytes = ConvertCommandStringToBytes(command);
+
+            _handler.SendExtendedCommand(new DeviceAddress(commandBytes[2], commandBytes[3], commandBytes[4]), commandBytes[6], commandBytes[7], commandBytes[5], false,
+                commandBytes[8], commandBytes[9], commandBytes[10], commandBytes[11], commandBytes[12], commandBytes[13], commandBytes[14],
+                commandBytes[15], commandBytes[16], commandBytes[17], commandBytes[18], commandBytes[19], commandBytes[20], commandBytes[21]);
+        }
+
+        public void SendExtendedCommandChecksum(string command, string checksum)
+        {
+            byte[] commandBytes = ConvertCommandStringToBytes(command);
+
+            bool check = false;
+            if (!bool.TryParse(checksum, out check))
+                check = false;
+            _handler.SendExtendedCommand(new DeviceAddress(commandBytes[2], commandBytes[3], commandBytes[4]), commandBytes[6], commandBytes[7], commandBytes[5], check,
+                commandBytes[8], commandBytes[9], commandBytes[10], commandBytes[11], commandBytes[12], commandBytes[13], commandBytes[14],
+                commandBytes[15], commandBytes[16], commandBytes[17], commandBytes[18], commandBytes[19], commandBytes[20], commandBytes[21]);
+
+        }
+
         private string GetClientIPAddress()
         {
             string clientIP = "0.0.0.0";
@@ -533,6 +572,45 @@ namespace Insteon.Library
             }
 
             return clientIP;
+        }
+
+        private byte[] ConvertCommandStringToBytes(string command)
+        {
+            if (command.Length % 2 != 0)
+                return null;
+
+            int commandLength = command.Length / 2;
+            byte[] commandBytes = new byte[commandLength];
+
+            for (int i = 0; i < commandLength; i++)
+            {
+                byte b = StringToByte(command.Substring(i * 2, 2));
+                commandBytes[i] = b;
+            }
+
+            return commandBytes;
+        }
+
+        private byte StringToByte(string input)
+        {
+            byte retVal = 0x00;
+
+            if (string.IsNullOrEmpty(input))
+                return 0x00;
+
+            string trimmed = null;
+            if (input.StartsWith("0x"))
+                trimmed = input.Substring(2);
+            else if (input.Contains('x'))
+                trimmed = input.Substring(input.IndexOf('x') + 1);
+            else trimmed = input;
+
+            if (trimmed.Length > 2)
+                trimmed = trimmed.Substring(0, 2);
+
+            retVal = (byte)Int32.Parse(trimmed, System.Globalization.NumberStyles.HexNumber);
+
+            return retVal;
         }
     }
 }

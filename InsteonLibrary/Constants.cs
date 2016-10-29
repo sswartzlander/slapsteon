@@ -218,11 +218,12 @@ namespace Insteon.Library
         public const byte IM_COMMAND_SEND_ALL_LINK_COMMAND = 0x61;
         public const byte IM_COMMAND_ALL_LINK_CLEANUP_FAILURE_REPORT = 0x56;
         public const byte IM_COMMAND_ALL_LINK_CLEANUP_STATUS_REOPRT = 0x58;
+        public const byte IM_COMMAND_GET_NEXT_ALL_LINK_RECORD = 0x6A;
         public const byte IM_COMMAND_START_ALL_LINKING = 0x64;
         public const byte IM_COMMAND_CANCEL_ALL_LINKING = 0x65;
         public const byte IM_COMMAND_ALL_LINK_RECORD_RESPONSE = 0x57;
         public const byte IM_COMMAND_RESET_IM = 0x67;
-
+        public const byte IM_COMMAND_GET_FIRST_ALL_LINK_RECORD = 0x69;
 
         // Thermostat Control Info (Cmd2 for STD_COMMAND_THERMOSTAT_CONTROL)
         public const byte THERMOSTAT_CONTROL_SET_HEAT_MODE = 0x04;
@@ -238,5 +239,25 @@ namespace Insteon.Library
         public const byte THERMOSTAT_STATUS_TEMP = 0x00;
         public const byte THERMOSTAT_STATUS_SETPOINT = 0x20;
         public const byte THERMOSTAT_STATUS_HUMIDITY = 0x60;
+
+        public enum IM_COMMAND
+        {
+            STANDARD_MSG_RCV = 0x50,
+            EXTENDED_MSG_RCV = 0x51,
+            ALL_LINKING_COMPLETED = 0x53,
+            BUTTON_EVENT_REPORT = 0x54,
+            USER_RESET_DETECTED = 0x55,
+            SEND_STANDARD_OR_EXTENDED_MSG = 0x62,
+            SET_IM_CONFIGURATION = 0x6B,
+            SEND_ALL_LINK_COMMAND = 0x61,
+            ALL_LINK_CLEANUP_FAILURE_REPORT = 0x56,
+            ALL_LINK_CLEANUP_STATUS_REPORT= 0x58,
+            GET_NEXT_ALL_LINK_RECORD = 0x6A,
+            START_ALL_LINKING = 0x64,
+            CANCEL_ALL_LINKING = 0x65,
+            ALL_LINK_RECORD_RESPONSE = 0x57,
+            RESET_IM = 0x67,
+            GET_FIRST_ALL_LINK_RECORD = 0x69
+        }
     }
 }

@@ -106,5 +106,29 @@ namespace Insteon.Library
         [OperationContract]
         [WebGet(UriTemplate = "/{device}/SetPointDown/{ip}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
         void SetPointDown(string device, string ip);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/enterLinking", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void EnterLinkingMode();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cancelLinking", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void CancelLinkingMode();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/ext/{command}/{checksum}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SendExtendedCommandChecksum(string command, string checksum);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/ext/{command}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SendExtendedCommand(string command);
+
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/std/{command}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SendStandardCommand(string command);
+
+
+
     }
 }

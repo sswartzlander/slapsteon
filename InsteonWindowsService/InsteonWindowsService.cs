@@ -97,8 +97,8 @@ namespace Insteon.WindowsService
                     _wcfHostThread = new Thread(new ThreadStart(HostService));
                     _wcfHostThread.Start();
 
-                    _iisExpressThread = new Thread(new ThreadStart(RunIISExpress));
-                    _iisExpressThread.Start();
+                    //_iisExpressThread = new Thread(new ThreadStart(RunIISExpress));
+                    //_iisExpressThread.Start();
 
                     SetServiceState(State.SERVICE_RUNNING);
 
@@ -327,6 +327,72 @@ namespace Insteon.WindowsService
                             SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(dev.Name,
                                 string.Format("Turned off at sunrise")));
                             Thread.Sleep(500);
+                        }
+                    }
+                }
+
+                // find all devices that are supporting random
+
+                List<Device> randomDevices = _handler.AllDevices.Values.Where(d => d.IsRandomOn == true).ToList();
+
+                foreach (Device randomDevice in randomDevices)
+                {
+                    // determine whether we are in the random window
+                    if (!(DateTime.Now.Hour >= (randomDevice.RandomOnStart ?? 0) && (DateTime.Now.Hour < ((randomDevice.RandomOnStart ?? 0) + (randomDevice.RandomRunDuration ?? 0) % 24))))
+                    {
+                        // outside the window, just make sure we have ended the random by turning off
+                        if (randomDevice.Status > 0 && randomDevice.LastOnWasRandom)
+                        {
+                            randomDevice.LastOnWasRandom = false;
+                            randomDevice.LastRandomOnTime = null;
+                            randomDevice.LastRandomOnLength = null;
+                            randomDevice.LastOff = DateTime.Now;
+                            randomDevice.Status = 0;
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(randomDevice.Name, "Turning off after random schedule ended."));
+
+                            _handler.SendStandardCommand(randomDevice.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+                        }
+
+                        continue;
+                    }
+
+                    // below here we must be inside the random window for this device
+                    if (randomDevice.Status > 0)
+                    {
+                        // did we turn it on?  if so we may need to turn it off now
+                        if (randomDevice.LastOnWasRandom)
+                        {
+                            if (randomDevice.LastRandomOnTime.HasValue && randomDevice.LastRandomOnTime.Value.AddMinutes(randomDevice.LastRandomOnLength ?? 0) < DateTime.Now)
+                            {
+                                // turn off device, wipe out randomization settings
+                                randomDevice.LastOnWasRandom = false;
+                                randomDevice.LastRandomOnTime = null;
+                                randomDevice.LastRandomOnLength = null;
+                                randomDevice.LastOff = DateTime.Now;
+                                randomDevice.Status = 0;
+                                SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(randomDevice.Name, "Turning off from random schedule."));
+                                _handler.SendStandardCommand(randomDevice.Address, Constants.STD_COMMAND_FAST_OFF, 0x00, 0x0F);
+                            }
+                        }
+                        else // do nothing, we did not turn the device on
+                        {
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // device is off, determine whether to turn it on
+                        if (_random.Next(1, 100) <= (randomDevice.RandomOnChance ?? 0))
+                        {
+                            int randomOnDuration = _random.Next(randomDevice.RandomDurationMin ?? 5, randomDevice.RandomDurationMax ?? 15);
+                            randomDevice.LastRandomOnLength = randomOnDuration;
+                            randomDevice.LastRandomOnTime = DateTime.Now;
+                            randomDevice.LastOnWasRandom = true;
+                            randomDevice.LastOn = DateTime.Now;
+                            randomDevice.Status = 100;
+
+                            SlapsteonEventLog.AddLogEntry(new SlapsteonEventLogEntry(randomDevice.Name, string.Format("Turned on random for {0} minutes.", randomOnDuration)));
+                            _handler.SendStandardCommand(randomDevice.Address, Constants.STD_COMMAND_FAST_ON, 0xFF, 0x0F);
                         }
                     }
                 }

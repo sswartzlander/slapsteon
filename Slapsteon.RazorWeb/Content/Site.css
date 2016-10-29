@@ -1,0 +1,253 @@
+body
+{
+    font-size: 75%;
+    font-family: Verdana, Tahoma, Arial, "Helvetica Neue", Helvetica, Sans-Serif;
+    color: #232323;
+    background-color: #fff;
+}
+
+/* Styles for basic forms
+-----------------------------------------------------------*/
+
+fieldset 
+{
+    border:1px solid #ddd;
+    padding:0 1.4em 1.4em 1.4em;
+    margin:0 0 1.5em 0;
+}
+
+legend 
+{
+    font-size:1.2em;
+    font-weight: bold;
+}
+
+textarea 
+{
+    min-height: 75px;
+}
+
+.editor-label 
+{
+    margin: 1em 0 0 0;
+}
+
+.editor-field 
+{
+    margin:0.5em 0 0 0;
+}
+
+
+/* Styles for validation helpers
+-----------------------------------------------------------*/
+.field-validation-error
+{
+    color: #ff0000;
+}
+
+.field-validation-valid
+{
+    display: none;
+}
+
+.input-validation-error
+{
+    border: 1px solid #ff0000;
+    background-color: #ffeeee;
+}
+
+.validation-summary-errors
+{
+    font-weight: bold;
+    color: #ff0000;
+}
+
+.validation-summary-valid
+{
+    display: none;
+}
+
+.on_device 
+{
+    font-size: 1.2em;
+    color: #000000;
+    background-color: #00DD00;
+   
+    
+}
+
+.on_device a
+{
+    font-size: 1.2em;
+    color: #000000;
+    text-decoration: none;
+}
+
+.on_device_motion 
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #0000CC;
+    text-decoration: none;
+}
+
+.off_device
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #DD0000;
+   
+    
+}
+
+.off_device a
+{    
+    font-size: 1.2em;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.off_device_motion 
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #CC0000;
+    text-decoration: none;
+}
+
+.thermostat_mode_cool 
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #000D84;
+}
+
+.thermostat_mode_heat 
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #741010;
+
+}
+.thermostat_mode_cool a
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #000D84;
+    text-decoration: none;
+}
+
+.thermostat_mode_heat a
+{
+    font-size: 1.2em;
+    color: #FFFFFF;
+    background-color: #741010;
+    text-decoration: none;
+
+}
+
+.thermostat_mode_auto
+{
+    font-size: 1.2em;
+    color: #000000;
+    background-color: #238004;
+    text-decoration: none;
+
+}
+
+.thermostat_mode_off
+{
+    font-size: 1.2em;
+    color: #000000;
+    background-color: #741010;
+    text-decoration: none;
+}
+
+.device 
+{
+    width: 400px;
+    height: 50px;
+}
+
+.dimmerLevels
+{
+    bottom: 0;
+    position: relative;
+}
+
+.dimLevel 
+{
+    float: left;
+    text-align: center;
+    width: 80px;
+}
+.dimLevel a
+{
+    float: left;
+    text-align: center;
+    width: 80px;
+    text-decoration: none;
+} 
+
+.fanSpeeds 
+{
+    bottom: 0;
+    position: relative;
+}
+
+.fanSpeed 
+{
+    float: left;
+    text-align: center;
+    width: 80px;
+}
+
+.fanSpeed a 
+{
+    float: left;
+    text-align: center;
+    width: 80px;
+    text-decoration: none;
+}
+span.left 
+{
+    background-color: transparent;
+    float: left;
+}
+span.right
+{
+    background-color: transparent;
+    float: right;
+}
+
+table.deviceTable 
+{
+    border-width: 2px;
+    border-style: solid;
+    border-color: #CCCCCC;
+    padding: 0px;
+    border-spacing: 0px;
+}
+table.deviceTable td 
+{
+    border-width: 2px;
+    border-style: solid;
+    border-color: #CCCCCC;
+    padding: 2px;
+}
+
+table.logTable 
+{
+    border-width: 2px;
+    border-style: solid;
+    border-color: #CCCCCC;
+    padding: 0px;
+    border-spacing: 0px;
+}
+table.logTable td 
+{
+    border-width: 1px;
+    border-style: solid;
+    border-color: #DDDDDD;
+    padding: 2px;
+}

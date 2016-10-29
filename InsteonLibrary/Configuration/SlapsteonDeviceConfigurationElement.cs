@@ -155,5 +155,47 @@ namespace Insteon.Library.Configuration
             get { return this["thermostatSetPoint"] as string; }
             set { this["thermostatSetPoint"] = value; }
         }
+
+        [ConfigurationProperty("isRandomOn", DefaultValue = false, IsRequired = false)]
+        public bool? IsRandomOn
+        {
+            get { return this["isRandomOn"] as bool?; }
+            set { this["isRandomOn"] = value; }
+        }
+
+        [ConfigurationProperty("randomStartTime", DefaultValue = null, IsRequired = false)]
+        public int? RandomStartTime
+        {
+            get { return this["randomStartTime"] as int?; }
+            set { this["randomStartTime"] = value; }
+        }
+
+        [ConfigurationProperty("randomRunDuration", DefaultValue = null, IsRequired = false)]
+        public int? RandomRunDuration
+        {
+            get { return this["randomRunDuration"] as int?; }
+            set { this["randomRunDuration"] = value; }
+        }
+
+        [ConfigurationProperty("randomDurationMin", DefaultValue = null, IsRequired = false)]
+        public int? RandomDurationMin
+        {
+            get { return this["randomDurationMin"] as int?; }
+            set { this["randomDurationMin"] = value; }
+        }
+
+        [ConfigurationProperty("randomDurationMax", DefaultValue = null, IsRequired = false)]
+        public int? RandomDurationMax
+        {
+            get { return this["randomDurationMax"] as int?; }
+            set { this["randomDurationMax"] = value; }
+        }
+
+        [ConfigurationProperty("randomOnChance", DefaultValue = null, IsRequired = false)]
+        public int? RandomOnChance
+        {
+            get { return this["randomOnChance"] as int?; }
+            set { this["randomOnChance"] = value; }
+        }
     }
 }

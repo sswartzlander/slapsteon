@@ -1,0 +1,81 @@
+﻿@model Insteon.Devices.ThermostatDevice
+<tr>
+<td>
+<div id="div@(Model.Name)" class="device">
+    @if (Model.CurrentMode == Insteon.Devices.ThermostatDevice.Mode.Cooling)
+    {
+    <div class="thermostat_mode_cool">
+        @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+        {
+            @Html.ActionLink(Model.Name, "SetHeatMode", Model)
+        }
+        else
+        {
+            @Html.Label(Model.Name)
+        }
+        <span class="right">Ambient: @Html.Label(Model.AmbientTemperature.ToString())°F</span>
+    </div>
+    <br />
+    <span class="left">Set Point: @Html.Label(Model.CoolSetPoint.ToString())°F</span>
+        <span class="right">
+            @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+            {
+                var space = "   ";
+                @Html.ActionLink("Lower", "SetPointDown", Model) @space
+                @Html.ActionLink("Raise", "SetPointUp", Model)
+            }
+        </span>
+    <br />
+        <span class="left">Fan: @Html.Label(Model.Fan.ToString())</span>
+    }
+    else if (Model.CurrentMode == Insteon.Devices.ThermostatDevice.Mode.Heating)
+    {
+        <div class="thermostat_mode_heat">
+            @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+            {
+                @Html.ActionLink(Model.Name, "SetCoolMode", Model)
+            }
+            else
+            {
+                @Html.Label(Model.Name)
+            }
+
+            <span class="right">Ambient: @Html.Label(Model.AmbientTemperature.ToString())°F</span>
+        </div>
+        <br />
+        <span class="left">Set Point: @Html.Label(Model.HeatSetPoint.ToString())°F</span>
+        <span class="right">
+            @if (HttpContext.Current.Request.UserHostAddress.StartsWith("192.168.22"))
+            {
+                var space = "   ";
+                @Html.ActionLink("Lower", "SetPointDown", Model) @space
+                @Html.ActionLink("Raise", "SetPointUp", Model)
+            }
+        </span>
+        <br />
+        <span class="left">Fan: @Html.Label(Model.Fan.ToString())</span>
+
+    }
+    else if (Model.CurrentMode == Insteon.Devices.ThermostatDevice.Mode.Auto)
+    {
+        <div class="thermostat_mode_auto">
+        @Html.Label(Model.Name)
+        </div>
+        <br />
+
+    }
+    else if (Model.CurrentMode == Insteon.Devices.ThermostatDevice.Mode.Off)
+    {
+
+    }
+    else if (Model.CurrentMode == Insteon.Devices.ThermostatDevice.Mode.Program)
+    {
+
+    }
+    <br />
+    <span class="left">Humidity: @Html.Label(Model.Humidity.ToString())%</span>
+    
+    
+</div>
+</td>
+</tr>

@@ -1,0 +1,28 @@
+﻿@model Insteon.Devices.SensorDevice
+<tr>
+<td>
+<div id="div@(Model.Name)" class="device">
+
+    @if (Model.Status > 0)
+    {
+    <div class="on_device_motion">
+        @Html.Label(Model.Name)
+        
+    </div>
+    <br />
+    
+    }
+    else
+    {
+    <div class="off_device_motion">
+       @Html.Label(Model.Name)
+        
+    </div>
+    <br />
+   
+    }
+    <span class="left">Last Triggered: @Html.Label(Model.LastOn.ToShortTimeString())</span>
+    <span class="right">Last Off: @Html.Label(Model.LastOff.ToShortTimeString())</span>
+</div>
+</td>
+</tr>

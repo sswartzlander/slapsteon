@@ -774,12 +774,6 @@ namespace Insteon.Library
                 else
                     deviceALDB = _aldbLibrary.Devices.First(a => a.DeviceAddress == deviceAddress.ToString());
 
-
-                // redundant...we should be doing this before we even pull the ALDB
-                //if (device.Delta != device.DeviceALDB.Delta)
-                //    log.DebugFormat("Device Delta {0} did not match the stored version {1}", device.Delta.ToString("X"), device.DeviceALDB.Delta.ToString("X"));
-
-
                 ALDBRecord record = new ALDBRecord();
                 record.AddressMSB = message[13];
                 record.AddressLSB = message[14];
@@ -1131,6 +1125,25 @@ namespace Insteon.Library
             }
         }
 
+        public void SendDeleteAllLink()
+        {
+            try
+            {
+                byte[] command = new byte[4];
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_START_ALL_LINKING;
+                command[2] = 0xFF; // Link Code: 0x00 Responder, 0x01 Controller, 0x03 Controller when IM initiates, Responder when other device, 0xFF delete the All-Link
+                command[3] = 0x00; // group number
+
+                _plm.Write(command, 0, 4);
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public void SendCancelAllLink()
         {
             try
@@ -1171,6 +1184,24 @@ namespace Insteon.Library
             {
 
             }
+        }
+
+        public void ManageIMAllLinkRecord(byte[] command)
+        {
+            if (command.Length != 11)
+                log.ErrorFormat("Incorrect length specified for ManageIMAllLinkRecord: {0}", command.Length);
+
+            try
+            {
+                command[0] = 0x02;
+                command[1] = Constants.IM_COMMAND_MANAGE_ALL_LINK_RECORD;
+                _plm.Write(command, 0, 11);
+            }
+            catch (Exception ex)
+            {
+
+            }
+
         }
 
         public DeviceStatus GetDeviceStatus(DeviceAddress deviceAddress)
@@ -1499,11 +1530,25 @@ namespace Insteon.Library
 
                         case Constants.IM_COMMAND_GET_FIRST_ALL_LINK_RECORD:
                             if (_bufferOffset < 3)
-                                break;
+                                return;
                             command = ExtractCommandFromBuffer(3);
 
                             // if getting first link we want to clear the list of links
                             _imLinks.Clear();
+                            break;
+                        case Constants.IM_COMMAND_MANAGE_ALL_LINK_RECORD:
+                            try
+                            {
+                                if (_bufferOffset < 12)
+                                    return;
+
+                                command = ExtractCommandFromBuffer(12);
+                            }
+                            catch (Exception ex)
+                            {
+                                log.ErrorFormat("Error processing manage all link record response: {0}.", ex.Message);
+                                log.ErrorFormat("Stack trace: {0}", ex.StackTrace);
+                            }
                             break;
                         default:
                             log.Warn(string.Format("Unknown IM command type in the buffer: {0}.  Cleaning the buffer.", _buffer[1].ToString("X")));
@@ -1752,11 +1797,6 @@ namespace Insteon.Library
 
         public void GetALDBForAllDevices()
         {
-            if (_aldbLibrary.LastSynchronized > DateTime.Now.AddDays(-7))
-            {
-                return;
-            }
-
             _aldbLibrary.LastSynchronized = DateTime.Now;
             foreach (string key in _allDevices.Keys)
             {
@@ -1766,19 +1806,30 @@ namespace Insteon.Library
                     continue;
 
                 DeviceALDB targetALDB = _aldbLibrary.Devices.FirstOrDefault(a => a.DeviceAddress == key);
-                
 
-                if (null != targetALDB && targetALDB.Delta == _allDevices[key].Delta && targetALDB.Delta != 0x00 && (targetALDB.ALDBRecords != null && targetALDB.ALDBRecords.Count > 0))
+                // check when the device was last updated and re-update it if it needs it
+
+                
+                // if we know about the device already, and the delta for the device matches the known delta, and the delta is not zero, and we know of the address table already
+
+                // known device, recently checked, had data, deltas match, then skip
+                if (null != targetALDB && targetALDB.LastSync > DateTime.Now.AddDays(-7) && targetALDB.Delta == _allDevices[key].Delta && targetALDB.ALDBRecords.Count > 0)
                 {
                     targetALDB.Name = _allDevices[key].Name;
-                    log.DebugFormat("Device {0}'s Delta matched the stored delta ({1})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"));
+                    log.DebugFormat("Device {0}'s Delta matched the stored delta ({1} and had recently fetched {2} records as of {3})",
+                        _allDevices[key].Name, 
+                        _allDevices[key].Delta.ToString("X"), 
+                        targetALDB.ALDBRecords.Count,
+                        targetALDB.LastSync.ToString());
                     continue;
+
                 }
                 else if (null != targetALDB)
                 {
                     targetALDB.Name = _allDevices[key].Name;
-                    log.DebugFormat("Device {0}'s Delta ({1}) did not match the stored delta ({2})", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"), targetALDB.Delta.ToString("X"));
+                    log.DebugFormat("Device {0}'s Delta ({1}) did not match the stored delta ({2}) or needs resyncing due to age", _allDevices[key].Name, _allDevices[key].Delta.ToString("X"), targetALDB.Delta.ToString("X"));
                     targetALDB.Delta = _allDevices[key].Delta;
+                    targetALDB.LastSync = DateTime.Now;
                 }
                 else
                 {
@@ -1787,11 +1838,17 @@ namespace Insteon.Library
                     targetALDB.Name = _allDevices[key].Name; 
                     targetALDB.Delta = _allDevices[key].Delta;
                     targetALDB.DeviceAddress = _allDevices[key].AddressString;
+                    targetALDB.LastSync = DateTime.Now;
 
                     _aldbLibrary.Devices.Add(targetALDB);
                 }
 
                 log.Info(string.Format("Getting ALDB records for {0}", _allDevices[key].Name));
+
+
+                // back up the current ALDB records for comparison of missing items
+                ALDBRecord[] backupALDB = new ALDBRecord[targetALDB.ALDBRecords.Count];
+                targetALDB.ALDBRecords.CopyTo(backupALDB);
 
                 // clear out the existing data from the dictionary so it doesn't get duplicated
                 targetALDB.ALDBRecords.Clear();
@@ -1817,6 +1874,24 @@ namespace Insteon.Library
 
                 log.Info(string.Format("Found {0} ALDB entries for device: {1}", targetALDB.ALDBRecords.Count, _allDevices[key].Name));
 
+                // make sure the entries in the backed up ALDB are still represented in the new
+                // TODO: this could be incorrect if the record was deleted...but not a huge concern for my needs
+                bool recordAddedFromBackup = false;
+                foreach (ALDBRecord rec in backupALDB)
+                {
+                    // new ALDB missing this record
+                    if (!targetALDB.ALDBRecords.Exists(r => r.AddressIndex == rec.AddressIndex))
+                    {
+                        log.DebugFormat("New ALDB was missing record {0}", rec.AddressIndex);
+                        targetALDB.ALDBRecords.Add(rec);
+
+                        recordAddedFromBackup = true;
+                    }
+                }
+
+                // if we added a record from backup, or the end of the list wasnt reached, set the sync date to mindate to force another re-sync next time
+                if (recordAddedFromBackup || !_aldbFinishedForDevice)
+                    targetALDB.LastSync = DateTime.MinValue;
             }
         }
 

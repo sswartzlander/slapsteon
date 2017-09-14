@@ -224,6 +224,7 @@ namespace Insteon.Library
         public const byte IM_COMMAND_ALL_LINK_RECORD_RESPONSE = 0x57;
         public const byte IM_COMMAND_RESET_IM = 0x67;
         public const byte IM_COMMAND_GET_FIRST_ALL_LINK_RECORD = 0x69;
+        public const byte IM_COMMAND_MANAGE_ALL_LINK_RECORD = 0x6F;
 
         // Thermostat Control Info (Cmd2 for STD_COMMAND_THERMOSTAT_CONTROL)
         public const byte THERMOSTAT_CONTROL_SET_HEAT_MODE = 0x04;
@@ -257,7 +258,8 @@ namespace Insteon.Library
             CANCEL_ALL_LINKING = 0x65,
             ALL_LINK_RECORD_RESPONSE = 0x57,
             RESET_IM = 0x67,
-            GET_FIRST_ALL_LINK_RECORD = 0x69
+            GET_FIRST_ALL_LINK_RECORD = 0x69,
+            MANAGE_ALL_LINK_RECORD = 0x6F
         }
     }
 }

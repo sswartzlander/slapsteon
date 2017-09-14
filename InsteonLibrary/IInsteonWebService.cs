@@ -116,6 +116,11 @@ namespace Insteon.Library
         void CancelLinkingMode();
 
         [OperationContract]
+        [WebGet(UriTemplate = "/unlink", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void Unlink();
+
+
+        [OperationContract]
         [WebGet(UriTemplate = "/cmd/ext/{command}/{checksum}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
         void SendExtendedCommandChecksum(string command, string checksum);
 
@@ -128,7 +133,22 @@ namespace Insteon.Library
         [WebGet(UriTemplate = "/cmd/std/{command}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
         void SendStandardCommand(string command);
 
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/im/first", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void GetIMFirst();
 
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/im/next", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void GetIMNext();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/cmd/im/manage/{command}", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        void SendIMManageLinkCommand(string command);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "/getIMLinks", ResponseFormat = WebMessageFormat.Json, BodyStyle = WebMessageBodyStyle.Wrapped)]
+        LinkRecord[] GetIMLinks();
 
     }
 }

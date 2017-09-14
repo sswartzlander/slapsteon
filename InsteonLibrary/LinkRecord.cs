@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Insteon.Devices;
+using System.Runtime.Serialization;
 
 namespace Insteon.Library
 {
+    [DataContract]
     public class LinkRecord
     {
         private byte _recordControl;
@@ -36,9 +38,10 @@ namespace Insteon.Library
             ParseLocalData();
 
         }
-
+        [DataMember]
         public string ReferenceDeviceName { get; set; }
 
+        [DataMember]
         public byte RecordControl
         {
             get { return _recordControl; }
@@ -48,10 +51,13 @@ namespace Insteon.Library
                 ParseRecordControl();
             }
         }
+        [DataMember]
         public DeviceAddress Address { get; set; }
 
+        [DataMember]
         public byte Group { get; set; }
 
+        [DataMember]
         public byte[] LocalData
         {
             get { return _localData; }
@@ -74,14 +80,20 @@ namespace Insteon.Library
 
         // record control info
 
-        public bool InUse { get { return _inUse; } }
-        public LinkType Type { get { return _type; } }
-        public bool HighWaterMark { get { return _highWaterMark; } }
-        public int SmartHops { get { return _smartHops; } }
+        [DataMember]
+        public bool InUse { get { return _inUse; } private set { _inUse = value; } }
+        [DataMember]
+        public LinkType Type { get { return _type; } private set { _type = value; } }
+        [DataMember]
+        public bool HighWaterMark { get { return _highWaterMark; } private set { _highWaterMark = value; } }
+        [DataMember]
+        public int SmartHops { get { return _smartHops; } private set { _smartHops = value; } }
 
         // local data
-        public byte OnLevel { get { return _onLevel; } }
-        public byte RampRate { get { return _rampRate; } }
+        [DataMember]
+        public byte OnLevel { get { return _onLevel; } private set { _onLevel = value; } }
+        [DataMember]
+        public byte RampRate { get { return _rampRate; } private set { _rampRate = value; } }
 
         private void ParseRecordControl()
         {

@@ -32,6 +32,13 @@ namespace Insteon.Library
                 _aldbRecords = value;
             }
         }
+
+        [XmlElement]
+        public DateTime LastSync
+        {
+            get;
+            set;
+        }
     }
 
     [Serializable]
@@ -61,6 +68,14 @@ namespace Insteon.Library
         public string AddressToString()
         {
             return Address1.ToString("X").PadLeft(2, '0') + Address2.ToString("X").PadLeft(2, '0') + Address3.ToString("X").PadLeft(2, '0'); 
+        }
+
+        public string AddressIndex
+        {
+            get
+            {
+                return AddressMSB.ToString("X").PadLeft(2, '0') + AddressLSB.ToString("X").PadLeft(2, '0');
+            }
         }
     }
 }

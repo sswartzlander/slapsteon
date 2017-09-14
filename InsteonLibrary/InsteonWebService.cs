@@ -525,11 +525,28 @@ namespace Insteon.Library
             _handler.SendCancelAllLink();
         }
 
+        public void Unlink()
+        {
+
+            _handler.SendDeleteAllLink();
+        }
+
+
         public void SendStandardCommand(string command)
         {
             byte[] commandBytes = ConvertCommandStringToBytes(command);
 
             _handler.SendStandardCommand(new DeviceAddress(commandBytes[2],commandBytes[3],commandBytes[4]), commandBytes[6], commandBytes[7], commandBytes[5]);
+        }
+
+        public void GetIMFirst()
+        {
+            _handler.GetFirstIMLink();
+        }
+
+        public void GetIMNext()
+        {
+            _handler.GetNextIMLink();
         }
 
         public void SendExtendedCommand(string command)
@@ -552,6 +569,18 @@ namespace Insteon.Library
                 commandBytes[8], commandBytes[9], commandBytes[10], commandBytes[11], commandBytes[12], commandBytes[13], commandBytes[14],
                 commandBytes[15], commandBytes[16], commandBytes[17], commandBytes[18], commandBytes[19], commandBytes[20], commandBytes[21]);
 
+        }
+
+        public void SendIMManageLinkCommand(string command)
+        {
+            byte[] commandBytes = ConvertCommandStringToBytes(command);
+
+            _handler.ManageIMAllLinkRecord(commandBytes);
+        }
+
+        public LinkRecord[] GetIMLinks()
+        {
+            return _handler.IMLinks.ToArray();
         }
 
         private string GetClientIPAddress()

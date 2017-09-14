@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Slapsteon.UI", "Slapsteon.U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Insteon.Devices", "Insteon.Devices\Insteon.Devices.csproj", "{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AirQualityMonitoring", "AirQualityMonitoring\AirQualityMonitoring.csproj", "{19BA957B-3E60-4308-B2BF-6DD75FB28F62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,6 +72,16 @@ Global
 		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}.Release|x86.ActiveCfg = Release|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{19BA957B-3E60-4308-B2BF-6DD75FB28F62}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

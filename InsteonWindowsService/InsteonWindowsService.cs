@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using log4net;
 using Insteon.Devices;
 using System.IO;
+using AirQualityMonitoring;
 
 namespace Insteon.WindowsService
 {
@@ -44,6 +45,8 @@ namespace Insteon.WindowsService
 
         private InsteonWebService _insteonWebService;
         private Random _random;
+
+        private MainWorker _airQualityWorker;
         public InsteonWindowsService()
         {
             log4net.Config.XmlConfigurator.Configure();
@@ -104,6 +107,8 @@ namespace Insteon.WindowsService
 
                 });
 
+                StartAirQualityMonitoring();
+
                 serviceStartThread.Start();
                 serviceStartThread.Join();
             }
@@ -148,6 +153,11 @@ namespace Insteon.WindowsService
             {
                 _plm.Close();
                 _plm.Dispose();
+            }
+
+            if (null != _airQualityWorker)
+            {
+                _airQualityWorker.Stop();
             }
         }
 
@@ -516,6 +526,27 @@ namespace Insteon.WindowsService
             catch (Exception ex)
             {
                 log.Error("Error during device event loop");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+            }
+        }
+
+        private void StartAirQualityMonitoring()
+        {
+            try
+            {
+                _airQualityWorker = new MainWorker();
+                Dictionary<string, string> sensorDictionary = new Dictionary<string, string>();
+                sensorDictionary.Add("mbr", "http://192.168.222.166:8085/stats");
+                sensorDictionary.Add("family", "http://192.168.222.167:8085/stats");
+                sensorDictionary.Add("mobile", "http://192.168.222.225:8085/stats");
+
+                _airQualityWorker.Initialize(sensorDictionary);
+                _airQualityWorker.Start();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error while starting air quality monitors");
                 log.Error(ex.Message);
                 log.Error(ex.StackTrace);
             }

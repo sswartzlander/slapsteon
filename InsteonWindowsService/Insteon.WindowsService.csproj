@@ -67,6 +67,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AirQualityMonitoring\AirQualityMonitoring.csproj">
+      <Project>{19BA957B-3E60-4308-B2BF-6DD75FB28F62}</Project>
+      <Name>AirQualityMonitoring</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Insteon.Devices\Insteon.Devices.csproj">
       <Project>{431CFD3A-7A5D-453B-A8C1-6E3E4F058902}</Project>
       <Name>Insteon.Devices</Name>
